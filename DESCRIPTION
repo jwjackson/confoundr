@@ -1,10 +1,12 @@
 Package: confoundr
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Diagnostics for confounding of time-varying and other joint exposures
 Version: 0.1
 Date: 2016-06-28
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Authors: John W. Jackson, Erin Schnellinger, Linda Valeri
+Maintainer: John W. Jackson <jwj724@mail.harvard.edu>
+            Erin Schnellinger <ers609@mail.harvard.edu>
+            Linda Valeri <LVALERI@mclean.harvard.edu>
+Description: This package produces the covariate balance diagnostics discussed in Jackson 2016
+License:
 LazyData: TRUE
