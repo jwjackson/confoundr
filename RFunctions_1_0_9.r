@@ -42,102 +42,194 @@ library(data.table)
 ###########################
 
 #Function to create exposure history for a single time varying exposure
-makehistory.one <- function (input,times,group=NULL,exposure,name.history="h") {
+makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h") {
 
+  if (is.null(id)) {
+    stop ("ERROR: 'id' is missing. Please specify a unique identifier")
+  }
+  
   if (is.null(input)) {
     stop ("ERROR: 'input' dataframe is missing")
   }
-
+  
   if (is.null(exposure)) {
     stop ("ERROR: root name for exposure is missing")
   }
-
+  
   if (is.null(times)) {
     stop ("ERROR: indices for exposure measurement times is missing. Please specify a numeric vector of times")
   }
-
+  
   list.exposure <- paste(exposure,times,sep="_")
-  history.names <- paste(name.history,times,sep="_")
-
+  
   if (any(!list.exposure %in% names(input))) {
     stop("ERROR: The exposure root name is misspelled, or some exposure measurements are missing from the input dataframe, or incorrect measurement times have been specified")
   }
 
-  matrix.exposure <- matrix(0,nrow=nrow(input),ncol=length(list.exposure))
-  matrix.exposure <-input[,list.exposure]
-  matrix.history <- matrix(0,nrow=nrow(input),ncol=length(list.exposure))
-  colnames(matrix.history) <- history.names
-  for (i in 1:length(list.exposure)) {
-    if (i==1) {
-      matrix.history[,i]<-paste("H",input[,group],sep="")
-    } else if (i>1) {
-      matrix.history[,i] <- paste(matrix.history[,(i-1)],matrix.exposure[,i-1],sep="")
-    }
+  if (!all(!input$id %in% input$id[duplicated(input$id)])) { 
+    stop("ERROR: id does not uniquely identify each observation (i.e. each row). Please specify a unique identifier.")
   }
-  data.frame(input,matrix.history)
 
-}
+  cumpaste = function(x,.sep="") {
+    Reduce(function(x1, x2) paste(x1,x2,sep=.sep),x,accumulate=TRUE)
+  }	
+	
+  if (is.null(group)) { 
+    
+    input.temp <- input %>% ungroup() %>% select_(.dots=c(id,list.exposure)) %>%
+      gather_(key_col="exp.name.time",value_col="exp.value",gather_cols=list.exposure) %>%
+      separate_(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
+      mutate(exp.time=as.numeric(exp.time)) %>%  
+      arrange_(id,"exp.time") %>%
+      group_by_(id) %>%
+      mutate(his.name=name.history,
+             his.time=exp.time,
+             his.value=ifelse(his.time==first(his.time),
+                            "H",
+                            paste("H",lag(cumpaste(exp.value)),sep=""))
+             ) %>%
+      select_(.dots=c(id,"his.name","his.time","his.value")) %>%
+      unite_(col="his.name.time",from=c("his.name","his.time"),sep="_") %>%
+      spread(his.name.time,his.value)
+    
+    outout <- left_join(input,input.temp,by=id)  
+	  data.frame(output)
+
+  } else if (!is.null(group)) {
+
+    input.temp <- input %>% ungroup() %>% select_(.dots=c(id,group,list.exposure)) %>% rename_("GROUP"=group) %>%
+      gather_(key_col="exp.name.time",value_col="exp.value",gather_cols=list.exposure) %>%
+      separate_(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
+      mutate(exp.time=as.numeric(exp.time)) %>%  
+      arrange_(id,"exp.time") %>%
+      group_by_(id) %>%
+      mutate(his.name=name.history,
+             his.time=exp.time,
+             his.value=ifelse(his.time==first(his.time),
+                              paste(GROUP,"H",sep=""),
+                              paste(GROUP,"H",lag(cumpaste(exp.value)),sep=""))
+      ) %>%
+      select_(.dots=c(id,"his.name","his.time","his.value")) %>%
+      unite_(col="his.name.time",from=c("his.name","his.time"),sep="_") %>%
+      spread(his.name.time,his.value)
+    
+    output <- left_join(input,input.temp,by=id)  
+	  data.frame(output)
+
+  }  
+
+  return(output)
+      
+}    
+
 
 #Function to create joint exposure history for two distinct time-varying exposures
-makehistory.two <- function (input,group=NULL,exposure.a,exposure.b,name.history.a="ha",name.history.b="hb",times) {
-
+makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.history.a="ha",name.history.b="hb",times) {
+  
   list.exposure.a <- paste(exposure.a,times,sep="_")
   list.exposure.b <- paste(exposure.b,times,sep="_")
-  history.names.a <- paste(name.history.a,times,sep="_")
-  history.names.b <- paste(name.history.b,times,sep="_")
+  list.exposure <- c(list.exposure.a,list.exposure.b)
+
+  if (is.null(id)) {
+    stop ("ERROR: 'id' is missing. Please specify a unique identifier")
+  }
 
   if (is.null(input)) {
     stop ("ERROR: 'input' dataframe is missing")
   }
-
+  
   if (is.null(exposure.a)) {
     stop ("ERROR: root name for the first exposure is missing")
   }
-
+  
   if (is.null(exposure.b)) {
     stop ("ERROR: root name for the second exposure is missing")
   }
-
+  
   if (is.null(times)) {
     stop ("ERROR: indices for exposure measurement times is missing. Please specify a numeric vector of times")
   }
-
+  
   if (any(!list.exposure.a %in% names(input))) {
     stop("ERROR: The exposure root name is misspelled, or some exposure measurements are missing from the input dataframe, or incorrect measurement times have been specified")
   }
-
+  
   if (any(!list.exposure.b %in% names(input))) {
     stop("ERROR: The exposure root name is misspelled, or some exposure measurements are missing from the input dataframe, or incorrect measurement times have been specified")
   }
 
-  matrix.exposure.a <- matrix(0,nrow=nrow(input),ncol=length(list.exposure.a))
-  matrix.exposure.b <- matrix(0,nrow=nrow(input),ncol=length(list.exposure.b))
+  if (!all(!input$id %in% input$id[duplicated(input$id)])) { 
+    stop("ERROR: id does not uniquely identify each observation (i.e. each row). Please specify a unique identifier.")
+  }  
 
-  matrix.exposure.a <- input[,list.exposure.a]
-  matrix.exposure.b <- input[,list.exposure.b]
+  cumpaste = function(x,.sep="") {
+    Reduce(function(x1, x2) paste(x1,x2,sep=.sep),x,accumulate=TRUE)
+  }	
+	
+  if (is.null(group)) { 
+    
+    input.temp <- input %>% ungroup() %>% select_(.dots=c(id,list.exposure)) %>%
+      gather_(key_col="exp.name.time",value_col="exp.value",gather_cols=c(list.exposure)) %>%
+      separate_(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
+      spread(key="exp.name",value="exp.value") %>%  
+      mutate(exp.time=as.numeric(exp.time)) %>%
+      rename_("exp.value.a"=exposure.a,"exp.value.b"=exposure.b) %>%
+      arrange_(id,"exp.time") %>%
+      group_by_(id) %>%
+      mutate(his.name.a=name.history.a,
+             his.name.b=name.history.b,
+             his.time.a=exp.time,
+             his.time.b=exp.time,
+             exp.value=paste(exp.value.a,exp.value.b,sep=""),
+             his.value.a=ifelse(his.time.a==first(his.time.a),
+                              "H",
+                              paste("H",lag(cumpaste(exp.value)),sep="")),
+             his.value.b=ifelse(his.time.b==first(his.time.b),
+                                paste("H",exp.value.a,sep=""),
+                                paste(his.value.a,exp.value.a,sep="")))
+    
+    output <- left_join(input ,input.temp.a,by=id)
+    output <- left_join(output,input.temp.b,by=id)
+    data.frame(output)
+    
+  } else if (!is.null(group)) {
 
-  matrix.history.a <- matrix(0,nrow=nrow(input),ncol=length(list.exposure.a))
-  matrix.history.b <- matrix(0,nrow=nrow(input),ncol=length(list.exposure.b))
+    input.temp <- input %>% ungroup() %>% select_(.dots=c(id,list.exposure,group))  %>% rename_("GROUP"=group) %>%
+      gather_(key_col="exp.name.time",value_col="exp.value",gather_cols=c(list.exposure)) %>%
+      separate_(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
+      spread(key="exp.name",value="exp.value") %>%  
+      mutate(exp.time=as.numeric(exp.time)) %>%
+      rename_("exp.value.a"=exposure.a,"exp.value.b"=exposure.b) %>%
+      arrange_(id,"exp.time") %>%
+      group_by_(id) %>%
+      mutate(his.name.a=name.history.a,
+             his.name.b=name.history.b,
+             his.time.a=exp.time,
+             his.time.b=exp.time,
+             exp.value=paste(exp.value.a,exp.value.b,sep=""),
+             his.value.a=ifelse(his.time.a==first(his.time.a),
+                                paste(GROUP,"H",sep=""),
+                                paste(GROUP,"H",lag(cumpaste(exp.value)),sep="")),
+             his.value.b=ifelse(his.time.b==first(his.time.b),
+                                paste(GROUP,"H",exp.value.a,sep=""),
+                                paste(his.value.a,exp.value.a,sep="")))
 
-  joint.exposure <- matrix(0,nrow=nrow(input),ncol=max(length(list.exposure.a),length(list.exposure.b)))
+      input.temp.a <- input.temp %>% select_(.dots=c(id,"his.name.a","his.time.a","his.value.a")) %>%
+        unite_(col="his.name.time.a",from=c("his.name.a","his.time.a"),sep="_") %>%        
+        spread(his.name.time.a,his.value.a)
+      
+      input.temp.b <- input.temp %>% select_(.dots=c(id,"his.name.b","his.time.b","his.value.b")) %>%
+        unite_(col="his.name.time.b",from=c("his.name.b","his.time.b"),sep="_") %>%        
+        spread(his.name.time.b,his.value.b)                
 
-  colnames(matrix.history.a) <-  history.names.a
-  colnames(matrix.history.b) <-  history.names.b
-  colnames(joint.exposure)    <- paste("q",seq(from=0,to=(max(length(list.exposure.a),length(list.exposure.b))-1)),sep="_")
+       output <- left_join(input ,input.temp.a,by=id)
+       output <- left_join(output,input.temp.b,by=id)
+	   data.frame(output)
 
-  for (i in 1:max(length(list.exposure.a),length(list.exposure.b))) {
-    if (i==1) {
-      matrix.history.a[,i]<-paste("H",input[,group],sep="")
-      matrix.history.b[,i]<-as.matrix(paste("H",input[,group],matrix.exposure.a[,i],sep=""))
-      joint.exposure[,i] <- as.matrix(paste("H",input[,group],matrix.exposure.a[,i],matrix.exposure.b[,i],sep=""))
-
-    } else if (i>1) {
-      matrix.history.a[,i] <- joint.exposure[,(i-1)]
-      matrix.history.b[,i] <- paste(joint.exposure[,(i-1)],matrix.exposure.a[,i],sep="")
-      joint.exposure[,i] <- as.matrix(paste(joint.exposure[,i-1],matrix.exposure.a[,i],matrix.exposure.b[,i],sep=""))
-    }
   }
-  data.frame(input,matrix.history.a,matrix.history.b)
+  
+ return(output)
+  
 }
 
 
