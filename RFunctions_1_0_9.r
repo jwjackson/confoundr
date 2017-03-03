@@ -72,8 +72,8 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
 
   cumpaste = function(x,.sep="") {
     Reduce(function(x1, x2) paste(x1,x2,sep=.sep),x,accumulate=TRUE)
-  }	
-	
+  }
+  
   if (is.null(group)) { 
     
     input.temp <- input %>% ungroup() %>% select_(.dots=c(id,list.exposure)) %>%
@@ -164,8 +164,8 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
 
   cumpaste = function(x,.sep="") {
     Reduce(function(x1, x2) paste(x1,x2,sep=.sep),x,accumulate=TRUE)
-  }	
-	
+  }
+  
   if (is.null(group)) { 
     
     input.temp <- input %>% ungroup() %>% select_(.dots=c(id,list.exposure)) %>%
@@ -231,7 +231,6 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
  return(output)
   
 }
-
 
 
 #######################
