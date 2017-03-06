@@ -187,7 +187,15 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
              his.value.b=ifelse(his.time.b==first(his.time.b),
                                 paste("H",exp.value.a,sep=""),
                                 paste(his.value.a,exp.value.a,sep="")))
-    
+	  
+      input.temp.a <- input.temp %>% select_(.dots=c(id,"his.name.a","his.time.a","his.value.a")) %>%
+        unite_(col="his.name.time.a",from=c("his.name.a","his.time.a"),sep="_") %>%        
+        spread(his.name.time.a,his.value.a)
+      
+      input.temp.b <- input.temp %>% select_(.dots=c(id,"his.name.b","his.time.b","his.value.b")) %>%
+        unite_(col="his.name.time.b",from=c("his.name.b","his.time.b"),sep="_") %>%        
+        spread(his.name.time.b,his.value.b)    
+	  
     output <- left_join(input ,input.temp.a,by=id)
     output <- left_join(output,input.temp.b,by=id)
     data.frame(output)
