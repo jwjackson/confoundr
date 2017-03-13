@@ -92,7 +92,7 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
       unite_(col="his.name.time",from=c("his.name","his.time"),sep="_") %>%
       spread(his.name.time,his.value)
     
-    outout <- left_join(input,input.temp,by=id)  
+    output <- left_join(input,input.temp,by=id)  
 	  data.frame(output)
 
   } else if (!is.null(group)) {
