@@ -1,0 +1,8 @@
+structure(list(jackson2016diagnostics = structure(list(title = "Diagnostics for confounding of time-varying and other joint exposures", 
+    author = structure(list(structure(list(given = c("John", 
+    "W"), family = "Jackson", role = NULL, email = NULL, comment = NULL), .Names = c("given", 
+    "family", "role", "email", "comment"))), class = "person"), 
+    journal = "Epidemiology", volume = "27", number = "6", pages = "859--869", 
+    year = "2016", publisher = "Wolters Kluwer"), .Names = c("title", 
+"author", "journal", "volume", "number", "pages", "year", "publisher"
+), bibtype = "Article", key = "jackson2016diagnostics")), class = "bibentry", strings = structure(character(0), .Names = character(0)), .Names = "jackson2016diagnostics")
