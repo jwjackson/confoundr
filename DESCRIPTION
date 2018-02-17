@@ -1,7 +1,7 @@
 Package: confoundr
 Type: Package
 Title: Diagnostics for Confounding of Time-varying and Other Joint Exposures
-Version: 1.0.11
+Version: 1.0.12
 Date: 2018-02-16
 Authors@R: c(person(given = "John W.", family = "Jackson", 
     email = "john.jackson@jhu.edu", role = c("aut", "cre")), 
