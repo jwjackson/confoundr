@@ -36,6 +36,7 @@ library(gridExtra)
 library(scales)
 library(Rmpfr)
 library(data.table)
+library(broom)
 
 ###########################
 ##MAKEHISTORY() FUNCTIONS##
@@ -50,7 +51,7 @@ library(data.table)
 #' @param group an optional baseline variable upon which to aggregate the exposure history. This argument provides a way to adjust the metrics for a baseline covariate. For example, in the context of a trial, the grouping variable coul be treatment assignment. In the context of a cohort study, this could be site e.g. "v".
 #' @export
 #' @examples
-#' makehistory.one(input, id, times, group, exposure, name.history)
+#' mydata.history <- makehistory.one(input=mydata, id=id, times=c(0,1,2), exposure="a", name.history="h", group="v")
 
 makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h") {
 
@@ -157,7 +158,7 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
 #' @param group an optional baseline variable upon which to aggregate the exposure history. This argument provides a way to adjust the metrics for a baseline covariate. For example, in the context of a trial, the grouping variable coul be treatment assignment. In the context of a cohort study, this could be site e.g. "v".
 #' @export
 #' @examples
-#' makehistory.two(input, id, times, group, exposure.a, exposure.b, name.history.a, name.history.b)
+#' mydata.history <- makehistory.two(input=mydata, id=id, times=c(0,1,2), exposure.a="a", exposure.b="z", name.history.a="ha", name.history.b="hb", group="v")
 
 makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.history.a="ha",name.history.b="hb",times) {
 
@@ -299,7 +300,7 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
 #' @param strata the root name for propensity-score strata e.g. "e"
 #' @export
 #' @examples
-#' lengthen(input, diagnostic, censoring, id, times.exposure, times.covariate, exposure, temporal.covariate, static.covariate, history, weight.exposure, censor, weight.censor, strata)
+#' mydata.long <- lengthen(input=mydata.history, diagnostic=3, censoring="yes", id=id, times.exposure=c(0,1,2), times.covariate=c(0,1,2), exposure="a", temporal.covariate=c("l","m","o"), static.covariate=c("n","p"), history="h", weight.exposure="wax", censor="s", weight.censor="ws", strata="e")
 
 lengthen <- function (input,
                       diagnostic,
@@ -509,7 +510,7 @@ step5 %>% mutate(time.exposure=as.numeric(time.exposure),time.covariate=as.numer
 #' @param times a vector of measurement times for the covariate e.g. c(1,2,3)
 #' @export
 #' @examples
-#' omit.history(input, omission, covariate.name, distance, time)
+#' mydata.long.omit <- omit.history(input=mydata.long, omission="relative", covariate.name=c("l","m","o"), distance=1)
 
 omit.history <- function (input,
                           omission,
@@ -803,7 +804,7 @@ apply.scope <- function (	input,
 #' @param loop a housekeeping argument the user can ignore. It is automatically set when the balance function is called by the diagnose() function described later. The default is set to "no".
 #' @export
 #' @examples
-#' balance(input, diagnostic, approach, censoring, scope, times.exposure, times.covariate, exposure, history, weight.exposure, weight.censor, strata, recency, average.over, periods, list.distance, ignore.missing.metric, loop)
+#' mytable <- balance(input=mydata.long.omit, diagnostic=3, approach="weight", censoring="yes", scope="all", times.exposure=c(0,1,2), times.covariate=c(0,1,2), sort.order=c("l","m","n","o","p"), exposure="a", history="h", weight.exposure="wax", weight.censor="ws", strata="e", recency, average.over, periods, list.distance, ignore.missing.metric, loop)
 
 balance <- function (input,
                      diagnostic,
@@ -1559,7 +1560,7 @@ diagnose <- function (
 #' @param text.legend text to include in legend (optional)
 #' @export
 #' @examples
-#' makeplot(input, diagnostic, approach, metric, scope, average.over, stratum, label.exposure, label.covariate, lbound, ubound, ratio, text.axis.title, text.axis.y, text.axis.x, text.strip.y, text.strip.x, point.size, zeroline.size, refline.size, refline.limit.a, refline.limit.b, panel.spacing.size, axis.title, label.width, groupvar, shape, colour, legend.title, legend.position, text.legend)
+#' myplot <- makeplot(input=mytable, diagnostic=3, approach="weight", metric="SMD", scope="all", average.over, stratum, label.exposure, label.covariate, lbound, ubound, ratio, text.axis.title, text.axis.y, text.axis.x, text.strip.y, text.strip.x, point.size, zeroline.size, refline.size, refline.limit.a, refline.limit.b, panel.spacing.size, axis.title, label.width, groupvar, shape, colour, legend.title, legend.position, text.legend)
 
 
 makeplot <- function (input,

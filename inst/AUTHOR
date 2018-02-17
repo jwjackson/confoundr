@@ -1,0 +1,7 @@
+c(person(given = "John W.", family = "Jackson",
+    email = "john.jackson@jhu.edu", role = c("aut", "cre")),
+    person(given = "Erin", family = "Schnellinger",
+    role = c("ctb")),
+    person(given = "Linda", family = "Valeri",
+    role = c("ctb"))
+    )
