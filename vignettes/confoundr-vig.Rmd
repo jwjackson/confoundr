@@ -17,21 +17,7 @@ knitr::opts_chunk$set(
 ```
 
 
-
-## Figures
-
-The figure sizes have been customised so that you can easily put two images side-by-side. 
-
-```{r, fig.show='hold'}
-plot(1:10)
-plot(10:1)
-```
-
-
-
-
-
-Overview 
+##Overview 
 
 This software implements three diagnostics for confounding that can be used in sequence (see Jackson 2016). These apply to any study of multivariate exposures e.g. time-varying exposures, direct effects, interaction, and censoring. The first two diagnostics pertain to the nature of confounding in the data, while the third is meant to examine residual confounding after applying inverse probability weighting. The third diagnostic can also be used to examine residual confounding within propensity-score strata (when these are used in place of covariates in the parametric g-formula). We recommend that the diagnostics be applied to covariates that investigators will use to control for confounding. We provide tools to help focus each diagnostic on the relevant covariate history (used to control for confounding).
 
@@ -47,7 +33,7 @@ To use these functions, users will need a basic understanding of data structures
 Users should be aware that applying these functions to dataframes (datasets) with many observations, follow-up times, and covariates may require substantial computing memory. The approach we implement here is described in Jackson 2016 and could be adapted for other software. In addition, output from other software can be imported and used in the plotting function provided here.
 
 
-Format of Input Data
+##Format of Input Data
 
 The software is designed to use data that analysts may readily have on hand in analyses of time-varying exposures. This includes time-varying exposures, time-varying covariates, time-varying weights (when applicable), and time-varying propensity-score strata (when applicable). Time-varying exposure history strata may also be required, and we provide functions to create these from the exposure variables.
 
@@ -78,7 +64,7 @@ Note (v) The code can accept a vector of time-indexed censoring indicators (1=ce
 Note (vi) Although the code will still run in the presence of missing data, the results may not be easily interpretable (especially when there is missing data in the exposures and their history).
 
 
-Function calls
+##Function calls
 
 lengthen() returns a dataframe where each record is indexed by the observation identifier, exposure measurement time, exposure value, covariate name, covariate measurement time, and possibly exposure history and/or propensity score strata. Weights will appear as additional columns.
 
@@ -299,7 +285,7 @@ apply.scope(
 
 
 
-Required Arguments for Function Calls
+##Required Arguments for Function Calls
 
 For all functions users must specify the diagnostic, approach, scope, and censoring arguments. Depending on how these are specified, other arguments may be required. For instance:
 
@@ -316,7 +302,7 @@ For all functions users must specify the diagnostic, approach, scope, and censor
 Please see the Software Manual for additional information on required arguments.
 
 
-Additional Notes
+##Additional Notes
 
 Format of initial dataset
 
@@ -400,7 +386,7 @@ A warning on required arguments
 The diagnostic, approach, scope, and censoring arguments for the lengthen(), balance(), diagnose(), and makeplot() functions are required and must be identical or else the functions will return errors or incorrect results. 
 
 
-Example code
+##Example code
 
 ```{r setup, include = FALSE}
 ##########################
