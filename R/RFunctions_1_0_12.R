@@ -27,16 +27,27 @@
 ##LOAD REQUIRED PACKAGES##
 ##########################
 
-library(magrittr)
-library(tidyr)
-library(dplyr)
-library(ggplot2)
-library(grid)
-library(gridExtra)
-library(scales)
-library(Rmpfr)
-library(data.table)
-library(broom)
+# @import magrittr
+# @import tidyr
+# @import dplyr
+# @import ggplot2
+# @import grid
+# @import gridExtra
+# @import scales
+# @import Rmpfr
+# @import data.table
+# @import broom
+
+#library(magrittr)
+#library(tidyr)
+#library(dplyr)
+#library(ggplot2)
+#library(grid)
+#library(gridExtra)
+#library(scales)
+#library(Rmpfr)
+#library(data.table)
+#library(broom)
 
 ###########################
 ##MAKEHISTORY() FUNCTIONS##
