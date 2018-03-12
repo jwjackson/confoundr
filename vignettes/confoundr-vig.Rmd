@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 ```
 
 
-##Overview 
+## Overview 
 
 This software implements three diagnostics for confounding that can be used in sequence (see Jackson 2016). These apply to any study of multivariate exposures e.g. time-varying exposures, direct effects, interaction, and censoring. The first two diagnostics pertain to the nature of confounding in the data, while the third is meant to examine residual confounding after applying inverse probability weighting. The third diagnostic can also be used to examine residual confounding within propensity-score strata (when these are used in place of covariates in the parametric g-formula). We recommend that the diagnostics be applied to covariates that investigators will use to control for confounding. We provide tools to help focus each diagnostic on the relevant covariate history (used to control for confounding).
 
@@ -33,7 +33,7 @@ To use these functions, users will need a basic understanding of data structures
 Users should be aware that applying these functions to dataframes (datasets) with many observations, follow-up times, and covariates may require substantial computing memory. The approach we implement here is described in Jackson 2016 and could be adapted for other software. In addition, output from other software can be imported and used in the plotting function provided here.
 
 
-##Format of Input Data
+## Format of Input Data
 
 The software is designed to use data that analysts may readily have on hand in analyses of time-varying exposures. This includes time-varying exposures, time-varying covariates, time-varying weights (when applicable), and time-varying propensity-score strata (when applicable). Time-varying exposure history strata may also be required, and we provide functions to create these from the exposure variables.
 
@@ -64,7 +64,7 @@ Note (v) The code can accept a vector of time-indexed censoring indicators (1=ce
 Note (vi) Although the code will still run in the presence of missing data, the results may not be easily interpretable (especially when there is missing data in the exposures and their history).
 
 
-##Function calls
+## Function calls
 
 lengthen() returns a dataframe where each record is indexed by the observation identifier, exposure measurement time, exposure value, covariate name, covariate measurement time, and possibly exposure history and/or propensity score strata. Weights will appear as additional columns.
 
@@ -386,16 +386,15 @@ A warning on required arguments
 The diagnostic, approach, scope, and censoring arguments for the lengthen(), balance(), diagnose(), and makeplot() functions are required and must be identical or else the functions will return errors or incorrect results. 
 
 
-##Example code
+## Example code
 
-```{r setup, include = FALSE}
+```{r, eval = FALSE, include = FALSE}
 ##########################
 ##LOAD DATA AND PACKAGES##
 ##########################
 
 #NOTE THAT THIS CODE REQUIRES R VERSION 3.1.2 OR HIGHER 
 
-install.packages(c("magrittr","tidyr","dplyr","ggplot2","gridExtra","scales","broom"),dependencies=TRUE)
 library(magrittr) #last tested on magrittr v1.5
 library(tidyr)    #last tested on tidyr v0.6.0
 library(dplyr)    #last tested on dplyr v0.5.0
@@ -405,11 +404,13 @@ library(gridExtra)#last tested on gridExtra v2.0.1
 library(scales)   #last tested on ggplot2 v0.4.0
 library(Rmpfr)    #last tested on Rmpfr v0.6-0 
 library(broom)    #last tested on broom v0.4.1
-path   <- "C:\\confoundr\data" 
+library(confoundr)
+library(readr)
+path = "../data"
 #for mac use one slash
-indata.small <- read.csv(paste(path,"example_sml.csv",sep=""))
+fname = file.path(path, "example_sml.csv")
+indata.small <- readr::read_csv(fname)
 #indata.large <- read.csv(paste(path,"example_lrg.csv",sep=""))
-source(paste(path,"RFunctions_1_0_8.r",sep=""))
 
 #####################################################################
 ##Example: Diagnostic 3 for a time-varying exposure without censoring
@@ -417,7 +418,7 @@ source(paste(path,"RFunctions_1_0_8.r",sep=""))
 
 #PRELIMINARY STEP: MAKE EXPOSURE HISTORY
 mydata <- indata.small
-mydata.history <- makehistory.one(input=mydata,exposure="a",name.history="h",times=c(0,1,2))
+mydata.history <- makehistory.one(input=mydata,id = "id", exposure="a",name.history="h",times=c(0,1,2))
 
 #STEP 1: RESTRUCTURE THE DATA
 mydata.long <- lengthen(
