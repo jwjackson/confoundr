@@ -1,8 +1,8 @@
 Package: confoundr
 Type: Package
 Title: Diagnostics for Confounding of Time-varying and Other Joint Exposures
-Version: 1.0.12
-Date: 2018-02-16
+Version: 1.0.13
+Date: 2018-03-12
 Authors@R: c(person(given = "John W.", family = "Jackson", 
     email = "john.jackson@jhu.edu", role = c("aut", "cre")), 
     person(given = "Erin", family = "Schnellinger", 
@@ -23,6 +23,7 @@ Description: This software implements three diagnostics for confounding that can
     control for confounding. We provide tools to help focus each diagnostic on 
     the relevant covariate history (used to control for confounding).
 Depends: R (>= 3.1.2),
+Imports:
     broom (>= 0.4.1),
     data.table,
     dplyr (>= 0.5.0),
@@ -33,14 +34,14 @@ Depends: R (>= 3.1.2),
     Rmpfr (>= 0.6-0),
     scales (>= 0.4.1),
     tidyr (>= 0.6.0)
-License: MIT
-Imports:
+License: MIT + file LICENSE
 LazyData: TRUE
 VignetteBuilder: knitr
 Suggests:
     covr,
     knitr,
     rmarkdown,
+    readr
 BugReports: https://github.com/jwjackson/confoundr/issues
-RoxygenNote: 6.0.1.9000
 Encoding: UTF-8
+RoxygenNote: 6.0.1
