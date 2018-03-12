@@ -586,7 +586,9 @@ omit.history <- function (input,
 #' @param metric the metric for which the user wishes to ignore missing values as specified in the 'ignore.missing.metric' argument.
 #' @export
 #' @examples
+#' \dontrun{
 #' apply.scope(input, diagnostic, approach, scope, recency, average.over, periods, list.distance, sort.order, ignore.missing.metric, metric)
+#' }
 
 apply.scope <- function (	input,
                           diagnostic,
