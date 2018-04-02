@@ -27,27 +27,18 @@
 ##LOAD REQUIRED PACKAGES##
 ##########################
 
-# @import magrittr
-# @import tidyr
-# @import dplyr
-# @import ggplot2
-# @import grid
-# @import gridExtra
-# @import scales
-# @import Rmpfr
-# @import data.table
-# @import broom
+#' @import grid
+#' @import gridExtra
+#' @import scales
+#' @import Rmpfr
+#' @import data.table
+#' @import broom
+#' @import ggplot2
+#' @importFrom magrittr %>%
+#' @importFrom tidyr gather gather_ separate separate_ unite spread
+#' @importFrom dplyr mutate select filter arrange arrange_ summarize group_by group_by_ ungroup first last between
+NULL
 
-#library(magrittr)
-#library(tidyr)
-#library(dplyr)
-#library(ggplot2)
-#library(grid)
-#library(gridExtra)
-#library(scales)
-#library(Rmpfr)
-#library(data.table)
-#library(broom)
 
 ###########################
 ##MAKEHISTORY() FUNCTIONS##
@@ -153,8 +144,6 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
 
   }
 
-
-
 }
 
 
@@ -229,8 +218,8 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
              his.time.b=exp.time,
              exp.value=paste(exp.value.a,exp.value.b,sep=""),
              his.value.a=ifelse(his.time.a==first(his.time.a),
-                              "H",
-                              paste("H",lag(cumpaste(exp.value)),sep="")),
+                                "H",
+                                paste("H",lag(cumpaste(exp.value)),sep="")),
              his.value.b=ifelse(his.time.b==first(his.time.b),
                                 paste("H",exp.value.a,sep=""),
                                 paste(his.value.a,exp.value.a,sep="")))
@@ -271,23 +260,24 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
                                 paste(GROUP,"H",exp.value.a,sep=""),
                                 paste(his.value.a,exp.value.a,sep="")))
 
-      input.temp.a <- input.temp %>% select_(.dots=c(id,"his.name.a","his.time.a","his.value.a")) %>%
-        unite_(col="his.name.time.a",from=c("his.name.a","his.time.a"),sep="_") %>%
-        spread(his.name.time.a,his.value.a)
+    input.temp.a <- input.temp %>% select_(.dots=c(id,"his.name.a","his.time.a","his.value.a")) %>%
+      unite_(col="his.name.time.a",from=c("his.name.a","his.time.a"),sep="_") %>%
+      spread(his.name.time.a,his.value.a)
 
-      input.temp.b <- input.temp %>% select_(.dots=c(id,"his.name.b","his.time.b","his.value.b")) %>%
-        unite_(col="his.name.time.b",from=c("his.name.b","his.time.b"),sep="_") %>%
-        spread(his.name.time.b,his.value.b)
+    input.temp.b <- input.temp %>% select_(.dots=c(id,"his.name.b","his.time.b","his.value.b")) %>%
+      unite_(col="his.name.time.b",from=c("his.name.b","his.time.b"),sep="_") %>%
+      spread(his.name.time.b,his.value.b)
 
-       output <- left_join(input ,input.temp.a,by=id)
-       output <- left_join(output,input.temp.b,by=id)
-	     output <- data.frame(output)
+    output <- left_join(input ,input.temp.a,by=id)
+    output <- left_join(output,input.temp.b,by=id)
+    output <- data.frame(output)
 
-	     output
+    output
 
   }
 
 }
+
 
 
 #######################

@@ -10,6 +10,7 @@ vignette: >
 ---
 
 ```{r setup, include = FALSE}
+library(confoundr)
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -388,14 +389,30 @@ The diagnostic, approach, scope, and censoring arguments for the lengthen(), bal
 
 ##Example code
 
-```{r setup, include = FALSE}
+Below, we provide an example in which we apply Diagnostic 3 to an artificial data set to illustrate covariate balance for a time-varying exposure without censoring. 
+
+```{r}
 ##########################
 ##LOAD DATA AND PACKAGES##
 ##########################
 
 #NOTE THAT THIS CODE REQUIRES R VERSION 3.1.2 OR HIGHER 
 
-install.packages(c("magrittr","tidyr","dplyr","ggplot2","gridExtra","scales","broom"),dependencies=TRUE)
+#install.packages("devtools")
+#library(devtools)
+#install_github("jwjackson/confoundr")
+#library(confoundr)
+
+#devtools::use_data(example_sml)
+#devtools::use_data(example_lrg)
+
+#indata.small <- load("~/Desktop/confoundr/data/example_sml.rda")
+#indata.large <- load("~/Desktop/confoundr/data/example_lrg.rda")
+
+library(readr)
+indata.small <- read_csv("~/Desktop/confoundr/data/example_sml.csv")
+indata.large <- read_csv("~/Desktop/confoundr/data/example_lrg.csv")
+
 library(magrittr) #last tested on magrittr v1.5
 library(tidyr)    #last tested on tidyr v0.6.0
 library(dplyr)    #last tested on dplyr v0.5.0
@@ -405,26 +422,26 @@ library(gridExtra)#last tested on gridExtra v2.0.1
 library(scales)   #last tested on ggplot2 v0.4.0
 library(Rmpfr)    #last tested on Rmpfr v0.6-0 
 library(broom)    #last tested on broom v0.4.1
-path   <- "C:\\confoundr\data" 
-#for mac use one slash
-indata.small <- read.csv(paste(path,"example_sml.csv",sep=""))
-#indata.large <- read.csv(paste(path,"example_lrg.csv",sep=""))
-source(paste(path,"RFunctions_1_0_8.r",sep=""))
+
 
 #####################################################################
 ##Example: Diagnostic 3 for a time-varying exposure without censoring
 #####################################################################
 
 #PRELIMINARY STEP: MAKE EXPOSURE HISTORY
-mydata <- indata.small
-mydata.history <- makehistory.one(input=mydata,exposure="a",name.history="h",times=c(0,1,2))
+mydata <- subset(indata.small, select=-c(h_0,h_1,h_2))
+mydata.history <- makehistory.one(input=mydata,
+                                  id="id",
+                                  exposure="a",
+                                  name.history="h",
+                                  times=c(0,1,2))
 
 #STEP 1: RESTRUCTURE THE DATA
 mydata.long <- lengthen(
   input=mydata.history,
+  id="id",
   diagnostic=3,
   censoring="no",
-  id="id",
   times.exposure=c(0,1,2),
   times.covariate=c(0,1,2),
   exposure="a",
@@ -489,8 +506,12 @@ metric="SMD"
 #write.csv(mytable,paste(path,"mytable.csv",sep=""))
 #ggsave(filename=paste(path,"myplot.pdf",sep=""))
 
+```
 
 
+Now, we illustrate how Diagnostic 1 can be implemented using a regression approach. 
+
+```{r}
 #################################################
 ##Example of Regression Approach for Diagnostic 1
 #################################################
@@ -498,7 +519,7 @@ metric="SMD"
 library(broom) #need for tidy()
 
 #create balance dataset
-mydata.long <- lengthen(input=mydata,
+mydata.long <- lengthen(input=mydata.history,
   diagnostic=1,
   censoring="no",
   id="id",
@@ -526,7 +547,11 @@ table.reg <- output %>%
 print(table.reg)
 #write.csv(table.reg,paste(path,"table_regression.csv"))
 #NOTE: This code applies the same model parameterization for each covariate (relying on a strong assumption).
+```
 
+Finally, we compare the regression approach to the direct calculation and standardization methods implemented by confoundR.
+
+```{r}
 ### COMPARE THAT TO A DIRECT CALCULATION & STANDARDIZATION ###
 
 table.std <- balance(input=mydata.long,

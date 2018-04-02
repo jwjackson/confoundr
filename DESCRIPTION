@@ -22,25 +22,24 @@ Description: This software implements three diagnostics for confounding that can
     that the diagnostics be applied to covariates that investigators will use to 
     control for confounding. We provide tools to help focus each diagnostic on 
     the relevant covariate history (used to control for confounding).
-Depends: R (>= 3.1.2),
-    broom (>= 0.4.1),
-    data.table,
-    dplyr (>= 0.5.0),
-    ggplot2 (>= 2.1.0),
-    grid,
-    gridExtra (>= 2.0.1),
-    magrittr (>= 1.5),
-    Rmpfr (>= 0.6-0),
-    scales (>= 0.4.1),
-    tidyr (>= 0.6.0)
+Depends: R (>= 3.1.2)
 License: MIT
-Imports:
+Imports: grid,
+    gridExtra (>= 2.0.1),
+    scales (>= 0.4.1),
+    Rmpfr (>= 0.6-0),
+    data.table,
+    broom (>= 0.4.1),
+    ggplot2 (>= 2.1.0),
+    magrittr (>= 1.5),
+    tidyr (>= 0.6.0),
+    dplyr (>= 0.5.0)
 LazyData: TRUE
 VignetteBuilder: knitr
 Suggests:
     covr,
     knitr,
-    rmarkdown,
+    rmarkdown
 BugReports: https://github.com/jwjackson/confoundr/issues
 RoxygenNote: 6.0.1.9000
 Encoding: UTF-8
