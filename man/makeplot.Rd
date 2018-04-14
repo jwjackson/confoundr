@@ -4,7 +4,7 @@
 \alias{makeplot}
 \title{Function to create balance plot for a specified diagnostic}
 \usage{
-makeplot(input, diagnostic, approach, metric = "SMD", scope,
+makeplot(input, diagnostic, approach, metric = "SMD", censoring, scope,
   average.over = NULL, stratum = NULL, label.exposure = "A",
   label.covariate = "C", lbound = -1, ubound = 1, ratio = 2,
   text.axis.title = 8, text.axis.y = 6.5, text.axis.x = 6.5,
@@ -22,6 +22,8 @@ makeplot(input, diagnostic, approach, metric = "SMD", scope,
 \item{approach}{adjustment method e.g. "none" or "weight" or "stratify"}
 
 \item{metric}{scale e.g. "D" for mean difference, "SMD" for standardized mean difference}
+
+\item{censoring}{use censoring indicators/weights e.g. "yes" or "no"}
 
 \item{scope}{report the entire trellis e.g. "all", the diagonal e.g. "recent", or a summary e.g. "average"}
 
@@ -76,12 +78,10 @@ makeplot(input, diagnostic, approach, metric = "SMD", scope,
 \item{legend.position}{position of legend (default = "bottom")}
 
 \item{text.legend}{text to include in legend (optional)}
-
-\item{censoring}{use censoring indicators/weights e.g. "yes" or "no"}
 }
 \description{
 Function to create balance plot for a specified diagnostic
 }
 \examples{
-myplot <- makeplot(input=mytable, diagnostic=3, approach="weight", metric="SMD", scope="all", average.over, stratum, label.exposure, label.covariate, lbound, ubound, ratio, text.axis.title, text.axis.y, text.axis.x, text.strip.y, text.strip.x, point.size, zeroline.size, refline.size, refline.limit.a, refline.limit.b, panel.spacing.size, axis.title, label.width, groupvar, shape, colour, legend.title, legend.position, text.legend)
+myplot <- makeplot(input, diagnostic, approach, metric, censoring, scope, average.over, stratum, label.exposure, label.covariate, lbound, ubound, ratio, text.axis.title, text.axis.y, text.axis.x, text.strip.y, text.strip.x, point.size, zeroline.size, refline.size, refline.limit.a, refline.limit.b, panel.spacing.size, axis.title, label.width, groupvar, shape, colour, legend.title, legend.position, text.legend)
 }

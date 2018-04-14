@@ -31,6 +31,7 @@ The R-based functions presented here allow users to construct balance tables and
 The user can request time-specific tables and plots for all times, or a subset of selected times. One can alternatively request summary metrics that average over non-referent exposure values, propensity-score strata and/or exposure history, time, and segments of distance, in that order (see Jackson 2016).
 
 To use these functions, users will need a basic understanding of data structures and data manipulation in R. They will also need to install a few add-on packages that the functions depend on (magrittr, tidyr, dplyr, ggplot2, scales, and gridExtra). These packages will need to be loaded at the beginning the R session, along with the grid package that comes with base R (see example at end of document). Note that the software will not run on R versions below 3.1.2.
+
 Users should be aware that applying these functions to dataframes (datasets) with many observations, follow-up times, and covariates may require substantial computing memory. The approach we implement here is described in Jackson 2016 and could be adapted for other software. In addition, output from other software can be imported and used in the plotting function provided here.
 
 
@@ -119,35 +120,43 @@ balance (
     diagnostic			      = diagnostic of interest e.g. 1, 2, or 3,
     approach			        = adjustment method e.g. "none" or "weight" or "stratify", 
     censoring		  	      = use censoring indicators/weights e.g. "yes" or "no",
-    scope			    	      = report the entire trellis e.g. "all", the diagonal e.g. "recent", or   
- 	                          a summary e.g. "average",
+    scope			    	      = report the entire trellis e.g. "all", the diagonal e.g. "recent", 
+                            or a summary e.g. "average",
     times.exposure	      = vector of exposure measurement times e.g. c(0,1,2),
     times.covariate	      = vector of covariate measurement times e.g. c(0,1,2),
-    sort.order            = vector of root names for all covariates listed in the order in which 
-                            they should appear in the table (and also plot) e.g.  
-                            c("n","m","o","l","p"). To display covariates in alphabetical order 
+    sort.order            = vector of root names for all covariates listed in the order in   
+                            which they should appear in the table (and also plot) e.g.  
+                            c("n","m","o","l","p"). To display covariates in alphabetical order
                             (the default), leave blank or type "alphabetical"
     exposure			        = root name of exposure e.g. "a",
     history			  	      = …exposure history e.g. "h",
     weight.exposure     	= …IP exposure weights e.g. "wa",
     weight.censor	      	= …IP censoring weights e.g. "ws",
     strata			  	      = …of propensity score strata e.g. "e",
-    recency				        = an integer for the relative distance between exposures and covariate 
-                            measurements to focus on (e.g. 0 would represent the same timing).
-                            the default is 0 for Diagnostics 1 and 3, and 1 for Diagnostic 2,
+    recency				        = an integer for the relative distance between exposures and   
+                            covariate measurements to focus on (e.g. 0 would represent 
+                            the same timing). The default is 0 for Diagnostics 1 and 3, 
+                            and 1 for Diagnostic 2,
     average.over 		      = summary level for average metrics e.g. standardize over 
                             "values" or "history" or "time" or "distance",
     periods			        	= a list of contiguous segments of relative distance to pool over 
                             e.g. list(0,1:4,5:10) would yield summaries for three segments,
-    list.distance         = a vector of distances to retain after averaging over time e.g. c(0,2),
+    list.distance         = a vector of distances to retain after averaging over time e.g. 
+                            c(0,2),
     ignore.missing.metric = "yes" or "no" depending on whether the user wishes to estimate 
-                             averages over person-time when there are missing values of the mean                                difference or standardized mean difference. Missing values for the                                 standardized mean difference can occur when, for example, there is no                              covariate variation within levels of exposure-history and measurement                              times. If this argument is set to "no" and there are missing values,                               the average will also be missing. If set to "yes" an average will be                               produced that ignores missing values.
+                             averages over person-time when there are missing values of the 
+                             mean difference or standardized mean difference. Missing values 
+                             for the standardized mean difference can occur when, for example, 
+                             there is no covariate variation within levels of exposure-history 
+                             and measurement times. If this argument is set to "no" and there 
+                             are missing values, the average will also be missing. If set to 
+                             "yes" an average will be produced that ignores missing values.
     metric 				        = the metric for which the user wishes to ignore missing values as 
                             specified in the ‘ignore_missing_metric’ argument.
-    sd.ref 				        = “yes” or “no” depending on whether the user wishes to use the standard 
-                             deviation of the reference group when calculating the SMD.
-    loop	                = a housekeeping argument the user can ignore. It is automatically set   
-                            when the balance function is called by the diagnose() function    
+    sd.ref 				        = “yes” or “no” depending on whether the user wishes to use the 
+                            standard deviation of the reference group when calculating the SMD.
+    loop	                = a housekeeping argument the user can ignore. It is automatically 
+                            set when the balance function is called by the diagnose() function
                             described later. The default is set to "no".
 )
 
@@ -160,7 +169,8 @@ makeplot (
     input 			  	= output from balance()
     diagnostic			= the diagnostic of interest e.g. 1, 2, or 3,
     approach		  	= the adjustment method e.g. "none" or "weight" or "stratify, 
-    metric 			  	= scale e.g. "D" for mean difference, "SMD" for standardized mean difference
+    metric 			  	= scale e.g. "D" for mean difference, "SMD" for standardized mean        
+                      difference
     censoring		  	= use censoring indicators/weights e.g. "yes" or "no",
     scope				    = report the entire trellis e.g. "all", the diagonal e.g. "recent", or   
  	                    a summary e.g. "average",
@@ -184,7 +194,10 @@ makehistory.one(
     exposure		  = the root name for exposure "a",
     name.history	= desired root name for time-indexed history variables e.g. "h",
     group         = an optional baseline variable upon which to segregate the exposure 
-                    history. This argument provides a way to adjust the metrics for a baseline                         covariate. For example, in the context of a trial, the grouping variable could                     be treatment assignment. In the context of a cohort study, this could be site                      e.g. "v".
+                    history. This argument provides a way to adjust the metrics for a baseline
+                    covariate. For example, in the context of a trial, the grouping variable 
+                    could be treatment assignment. In the context of a cohort study, this could
+                    be site e.g. "v".
 )
 
 
@@ -197,7 +210,10 @@ makehistory.two(
     name.history.a = desired root name for the first time-indexed history variables e.g. "ha", 
     name.history.b = … root name for the second time-indexed history variables e.g. "hb",
     group          = an optional baseline variable upon which to segregate the exposure 
-                     history. This argument provides a way to adjust the metrics for a baseline                         covariate. For example, in the context of a trial, the grouping variable could                      be treatment assignment. In the context of a cohort study, this could be site                      e.g. "v".
+                     history. This argument provides a way to adjust the metrics for a baseline
+                     covariate. For example, in the context of a trial, the grouping variable 
+                     could be treatment assignment. In the context of a cohort study, this 
+                     could be site e.g. "v".
        )
 
 
@@ -219,40 +235,48 @@ diagnose(
     diagnostic		       	= diagnostic of interest e.g. 1, 2, or 3,
     censoring			        = use censoring indicators/weights e.g. "yes" or "no",
     approach		        	= adjustment method e.g. "none" or "weight" or "stratify", 
-    scope				          = report the entire trellis e.g. "all", the diagonal e.g. "recent", or   
- 	  					              a summary e.g. "average",
+    scope				          = report the entire trellis e.g. "all", the diagonal e.g. "recent",
+                            or a summary e.g. "average",
     id					          = unique observation identifier e.g. "id"
     times.exposure 	      = a vector of exposure measurement times e.g. c(0,1,2)
     times.covariate       = a vector of covariate measurement times e.g. c(0,1,2)
     exposure			        = the root name for exposure measurements e.g. "a",
-    temporal. covariate	  = a vector of root names for covariates whose values change over time 
+    temporal. covariate	  = a vector of root names for covariates whose values change over time
                             e.g. c("l","m","n","o","p"),
     static.covariate      = a vector of root names for covariates whose values do not change  
-                            (covariates listed here should not appear in the temporal.covariate 
+                            (covariates listed here should not appear in the temporal.covariate
                             argument)
-    sort.order      	    = vector of root names for all covariates listed in the order in which 
-                            they should appear in the table (and also plot) e.g.  
-                            c("n","m","o","l","p"). To display covariates in alphabetical order 
+    sort.order      	    = vector of root names for all covariates listed in the order in 
+                            which they should appear in the table (and also plot) e.g.  
+                            c("n","m","o","l","p"). To display covariates in alphabetical order
                             (the default), leave blank or type "alphabetical"
     history				        = the root name for history measurements e.g. "h",
     weight.exposure	      = … for exposure weights e.g. "wa",
     censor 			        	= … for censoring indicators "s",
     weight.censor		      = … for censoring weights e.g. "ws",
     strata				        = … for propensity-score strata e.g. "e",
-    recency				        = an integer for the relative distance between exposures and covariate 
-                            measurements to focus on (e.g. 0 would represent the same timing).
-                            the default is 0 for Diagnostics 1 and 3, and 1 for Diagnostic 2,
+    recency				        = an integer for the relative distance between exposures and 
+                            covariate measurements to focus on (e.g. 0 would represent the same
+                            timing). The default is 0 for Diagnostics 1 and 3, and 1 for 
+                            Diagnostic 2,
     average.over 		      = summary level for average metrics e.g. standardize over 
                             "values" or "history" or "time" or "distance",
     periods				        = a list of contiguous segments of relative distance to pool over 
                             e.g. list(0,1:4,5:10) would yield summaries for three segments,
-    list.distance         =  a vector of distances to retain after averaging over time e.g. c(0,2),
+    list.distance         =  a vector of distances to retain after averaging over time e.g. 
+                              c(0,2),
     ignore.missing.metric = "yes" or "no" for whether the user wishes to estimate 
-                            averages over person-time when the balance metric has missing values.                              For example, the standardized mean difference will be missing when                                 there is no covariate variation within levels of exposure-history and                              measurement times. When this argument is set to "no" and there are                                 missing values, the average will also be missing. If set to "yes" an                               average will be produced that ignores missing values.
+                            averages over person-time when the balance metric has missing 
+                            values. For example, the standardized mean difference will be 
+                            missing when there is no covariate variation within levels of 
+                            exposure-history and measurement times. When this argument is set 
+                            to "no" and there are missing values, the average will also be 
+                            missing. If set to "yes" an average will be produced that ignores 
+                            missing values.
     metric 				        = the metric for which the user wishes to ignore missing values as 
                             specified in the ‘ignore.missing.metric’ argument.
-    loop	                = "yes" to iteratively apply balance() and lengthen() or "no" to process 
-                            all covariates and measurement times at once.
+    loop	                = "yes" to iteratively apply balance() and lengthen() or "no" to 
+                              process all covariates and measurement times at once.
 )
 
 There is an important change in workflow when users wish to use the diagnose() function and also remove irrelevant covariate history from the balance table calculations and plot. Users who wish to do so will need to apply the omit.history() function to the dataframe output by diagnose(). If the user wants to remove covariate history while averaging metrics over time or distance, the user will first have to call the diagnose() function with the scope argument set to “all”. The user would then apply the omit.history() function as many times as desired, and then use the apply.scope() function described next to average the metrics over person-time. This workflow change allows users to ensure that the summary metrics ignore covariate history the user deems irrelevant to confounding.
@@ -264,22 +288,30 @@ apply.scope(
     input                 = dataframe output by diagnose() or balance() function,
 		diagnostic	          = diagnostic of interest e.g. 1, 2, or 3,
 		approach   	          = adjustment method e.g. "none" or "weight" or "stratify", 
-    scope                 = report the entire trellis e.g. "all", the diagonal e.g. "recent", or   
- 	  					              a summary e.g. "average",
-    recency		            = an integer for the relative distance between exposures and covariate 
-                            measurements to focus on (e.g. 0 would represent the same timing).
-                            the default is 0 for Diagnostics 1 and 3, and 1 for Diagnostic 2,
+    scope                 = report the entire trellis e.g. "all", the diagonal e.g. "recent", 
+                            or a summary e.g. "average",
+    recency		            = an integer for the relative distance between exposures and 
+                            covariate measurements to focus on (e.g. 0 would represent the same
+                            timing). The default is 0 for Diagnostics 1 and 3, and 1 for 
+                            Diagnostic 2,
 		average.over          = summary level for average metrics e.g. standardize over 
                             "values" or "history" or "time" or "distance",
 		periods               = a list of contiguous segments of relative distance to pool over 
                             e.g. list(0,1:4,5:10) would yield summaries for three segments,
-   list.distance          = a vector of distances to retain after averaging over time e.g. c(0,2),
-   sort.order	            = vector of root names for all covariates listed in the order in which 
-                            they should appear in the table (and also plot) e.g.  
-                            c("n","m","o","l","p"). To display covariates in alphabetical order 
+   list.distance          = a vector of distances to retain after averaging over time e.g. 
+                            c(0,2),
+   sort.order	            = vector of root names for all covariates listed in the order in 
+                            which they should appear in the table (and also plot) e.g.  
+                            c("n","m","o","l","p"). To display covariates in alphabetical order
                             (the default), leave blank or type "alphabetical"
-    ignore.missing.metric = "yes" or "no" depending on whether the user wishes to
-                            estimate averages over person-time when there are missing values of the                             mean difference or standardized mean difference. Missing values for the                             standardized mean difference can occur when, for example, there is no                              covariate variation within levels of exposure-history and measurement                              times. If this argument is set to "no" and there are missing values,                               the average will also be missing. If set to "yes" an average will be                               produced that ignores missing values.
+   ignore.missing.metric = "yes" or "no" depending on whether the user wishes to
+                            estimate averages over person-time when there are missing values of
+                            the mean difference or standardized mean difference. Missing values
+                            for the standardized mean difference can occur when, for example, 
+                            there is no covariate variation within levels of exposure-history 
+                            and measurement times. If this argument is set to "no" and there 
+                            are missing values, the average will also be missing. If set to 
+                            "yes" an average will be produced that ignores missing values.
     metric 		            = the metric for which the user wishes to ignore missing values as 
                             specified in the ‘ignore.missing.metric’ argument.
 )
@@ -292,8 +324,9 @@ For all functions users must specify the diagnostic, approach, scope, and censor
 
 •	The makeplot()function also requires the metric argument. 
 
-•	For the balance() and makeplot() functions, specifying scope=“average”, will require you to     
-  specify an option for the  average.over  argument. If you chose average.over=“strata” then you do   not need to choose a value for the stratum argument. 
+•	For the balance() and makeplot() functions, specifying scope=“average”, will require you to 
+  specify an option for the  average.over  argument. If you chose average.over=“strata” then 
+  you do not need to choose a value for the stratum argument. 
   
 •	Specifying scope=“recent” will allows you to specify an option for the recency argument in 
   balance() i.e. compute metrics at a specific exposure-covariate distance of your choosing. 
@@ -307,14 +340,14 @@ Please see the Software Manual for additional information on required arguments.
 
 Format of initial dataset
 
-o	As stated earlier, the input dataset should have one record per observation (wide format) with 
-  the timing of variables indexed by an underscore followed by the time index (underscores should 
-  NOT appear anywhere else in the variable name). Any indexing scheme can be used (e.g. 
-  "var_1","var_4","var_9"), but it may be easiest to assign zero as the baseline index and increase
-  it by one the unit for each subsequent measurement (e.g. "var_0","var_1","var_2"). 
+o	As stated earlier, the input dataset should have one record per observation (wide format) 
+  with the timing of variables indexed by an underscore followed by the time index (underscores
+  should NOT appear anywhere else in the variable name). Any indexing scheme can be used (e.g. 
+  "var_1","var_4","var_9"), but it may be easiest to assign zero as the baseline index and 
+  increase it by one the unit for each subsequent measurement (e.g. "var_0","var_1","var_2"). 
 
-o	The common referent value—to which all other exposure levels are compared—should be coded as the 
-  lowest value.
+o	The common referent value—to which all other exposure levels are compared—should be coded as 
+  the lowest value.
 
 o	Censored data should contain a vector of time-indexed censoring indicators (1=censored, 0 
   otherwise) for the lengthen() function.
@@ -322,74 +355,106 @@ o	Censored data should contain a vector of time-indexed censoring indicators (1=
 
 Alignment of Censoring weights
 
-o	Generally speaking, the code asks for separate exposure and censoring weights. This is so because   the lengthen()function will align censoring weights with exposure times, in the case of  
-  Diagnostics1 and 3, or with covariate times in the case of Diagnostic 2. 
+o	Generally speaking, the code asks for separate exposure and censoring weights. This is so 
+  because the lengthen()function will align censoring weights with exposure times, in the case 
+  of Diagnostics1 and 3, or with covariate times in the case of Diagnostic 2. 
 
-o	The balance()function takes the product of exposure and censoring weights during the estimation 
-  process. 
+o	The balance()function takes the product of exposure and censoring weights during the 
+  estimation process. 
 
 
 Time-indices for multivariate exposures and point exposures
 
-o	The functions provided here were developed for time-varying exposures and treat covariates as if 
-  they precede exposure when they share the same time index. What follows next is a workaround for 
-  multivariate exposures that generally applies when, for some times, exposures precede covariates.
+o	The functions provided here were developed for time-varying exposures and treat covariates as
+  if they precede exposure when they share the same time index. What follows next is a 
+  workaround for multivariate exposures that generally applies when, for some times, exposures 
+  precede covariates.
 
 
-  For multivariate joint exposures, some covariates  may intercede between the exposures, as in the
-  example of exposures A and Z in the eAppendix of the Jackson 2016. Specifically, it may be the   
-  case that (i) at each time t, exposure A(t) affects covariates C(t) which affect exposure Z(t), 
-  and (ii) covariates C(t) affect subsequent exposures A(t+k) and Z(t+k) and also the outcome Y. 
-  The functions could be used as they are to assess confounding for the second exposure Z (since 
-  both covariates L and C precede Z); a workaround to assess confounding for the first exposure   
-  A would be to increase, by one unit (or some value appropriate for the data’s indexing scheme), 
-  the indices for all covariates L that occur after A for any given time t (i.e. covariate index 
-  --> covariate index+1). The functions can then be used to examine confounding for exposure A. 
-  Another approach for exposure A would be to remove the history on L measured at the same time as 
-  the exposure A using omit.history() on the dataframe produced by lengthen(), but this only works 
-  for Diagnostics 1 and 3.
+For multivariate joint exposures, some covariates  may intercede between the exposures, as in 
+the example of exposures A and Z in the eAppendix of the Jackson 2016. Specifically, it may be 
+the case that (i) at each time t, exposure A(t) affects covariates C(t) which affect exposure 
+Z(t), and (ii) covariates C(t) affect subsequent exposures A(t+k) and Z(t+k) and also the 
+outcome Y. The functions could be used as they are to assess confounding for the second 
+exposure Z (since both covariates L and C precede Z); a workaround to assess confounding for 
+the first exposure A would be to increase, by one unit (or some value appropriate for the 
+data’s indexing scheme), the indices for all covariates L that occur after A for any given time
+t (i.e. covariate index --> covariate index+1). The functions can then be used to examine 
+confounding for exposure A. Another approach for exposure A would be to remove the history on L
+measured at the same time as the exposure A using omit.history() on the dataframe produced by 
+lengthen(), but this only works for Diagnostics 1 and 3.
 
-o	The code can also be tricked to handle multivariate point exposures by simply adding a subscript 
-  “_0” to each exposure and covariate when using lengthen(), and then specifying “0” for exposure 
-  and covariate times when using balance().
+o	The code can also be tricked to handle multivariate point exposures by simply adding a 
+  subscript “_0” to each exposure and covariate when using lengthen(), and then specifying “0” 
+  for exposure and covariate times when using balance().
 
 
 Multivariate time-varying exposures or point exposures
 
-When the exposure is multivariate, the idea is to diagnose each exposure separately (see eAppendix of Jackson 2016). From the perspective of using the R-functions, the only difference is to use exposure history based on all exposures that comprise the multivariate exposure. It is important that such joint exposure history accurately reflect the ordering of each component exposure. The function makehistory.two() creates an appropriate joint exposure history for each of two exposures, assuming that exposures in its argument list.exposure.a (e.g. A) precede those in list.exposure.b (e.g. Z) at any given index as described in the eAppendix of Jackson 2016. In that example, exposure A(t) always precedes exposure Z(t) such that the joint history of A(2) is A(1), A(0), Z(0) while the joint history of Z(2) is A(1), A(0), Z(1), Z(0). If one exposure does not precede the other, investigators will still need to use an appropriate joint exposure history and can specify either order as desired. Note that the exposure history produced by the function makehistory.two() will be inappropriate if the relative ordering of A(t) and Z(t) varies over time.
+When the exposure is multivariate, the idea is to diagnose each exposure separately (see 
+eAppendix of Jackson 2016). From the perspective of using the R-functions, the only difference 
+is to use exposure history based on all exposures that comprise the multivariate exposure. It 
+is important that such joint exposure history accurately reflect the ordering of each component
+exposure. The function makehistory.two() creates an appropriate joint exposure history for each
+of two exposures, assuming that exposures in its argument list.exposure.a (e.g. A) precede 
+those in list.exposure.b (e.g. Z) at any given index as described in the eAppendix of Jackson 
+2016. In that example, exposure A(t) always precedes exposure Z(t) such that the joint history 
+of A(2) is A(1), A(0), Z(0) while the joint history of Z(2) is A(1), A(0), Z(1), Z(0). If one 
+exposure does not precede the other, investigators will still need to use an appropriate joint 
+exposure history and can specify either order as desired. Note that the exposure history 
+produced by the function makehistory.two() will be inappropriate if the relative ordering of 
+A(t) and Z(t) varies over time.
 
 
 Averaging over person-time
 
-When using the balance(), diagnose(), or apply.scope() functions, specifying average.over=“average” and average.over=“time” will return balance metrics for each “distance” value. The output can be subset to specific distances of interest e.g. k=0 and k=2 by supplying a vector to list.distance e.g. c(0,2) but this is optional. Specifying average.over=“distance”, you can opt to average within segments of distance using the periods argument (leaving this blank will average over all distance values). The periods argument requires a list of contiguous numeric vectors e.g. list(0,1:4,5:10). For Diagnostic 3 this would report metrics at time t, averages over times t-1 to t-4, and averages over times t-5 to t-10. For Diagnostics 1 and 3 the entire range should lie between 0 and t. For Diagnostic 2 the entire range should lie between 1 and t.
+When using the balance(), diagnose(), or apply.scope() functions, specifying 
+average.over=“average” and average.over=“time” will return balance metrics for each “distance” 
+value. The output can be subset to specific distances of interest e.g. k=0 and k=2 by supplying
+a vector to list.distance e.g. c(0,2) but this is optional. Specifying average.over=“distance”,
+you can opt to average within segments of distance using the periods argument (leaving this 
+blank will average over all distance values). The periods argument requires a list of 
+contiguous numeric vectors e.g. list(0,1:4,5:10). For Diagnostic 3 this would report metrics at
+time t, averages over times t-1 to t-4, and averages over times t-5 to t-10. For Diagnostics 1 
+and 3 the entire range should lie between 0 and t. For Diagnostic 2 the entire range should lie
+between 1 and t.
 
 
 Residual confounding for parametric g-formula with propensity score stratification
 
-o	Jackson 2016 emphasizes Diagnostic 3 to describe residual confounding in a weighted population 
-  (for marginal structural models). This can be accomplished by specifying diagnostic=3 and 
-  approach=“weight”. Any weight can be used. 
+o	Jackson 2016 emphasizes Diagnostic 3 to describe residual confounding in a weighted 
+  population (for marginal structural models). This can be accomplished by specifying 
+  diagnostic=3 and approach=“weight”. Any weight can be used. 
 
-o	In the eAppendix of Jackson 2016, there is an alternative version of Diagnostic 3 that describes 
-  residual confounding within a propensity-score stratified population (for a special case of the 
-  parametric g-formula). This is done by specifying diagnostic=3 and approach=“stratify”. Note that
-  one can average these metrics over propensity score strata, exposure history, time, and distance 
-  (i.e. by specifying scope= “average” and choosing average.over=“strata” or higher).
+o	In the eAppendix of Jackson 2016, there is an alternative version of Diagnostic 3 that 
+  describes residual confounding within a propensity-score stratified population (for a special
+  case of the parametric g-formula). This is done by specifying diagnostic=3 and 
+  approach=“stratify”. Note that one can average these metrics over propensity score strata, 
+  exposure history, time, and distance (i.e. by specifying scope= “average” and choosing 
+  average.over=“strata” or higher).
   
   
 Notes on investigator supplied data
 
-These functions can diagnose confounding for a single exposure or each distinct exposure (in a multivariate exposure) as long as the user provides appropriate history, inverse probability weights, propensity score strata, and censoring indicators. See Jackson 2016 for details. Note that those particular specifications may not apply to the user’s causal question (e.g. the user has data where covariates are measured after exposure for every time point, instead of before exposure). The make.history()functions return nonsense when exposures are partially missing.
+These functions can diagnose confounding for a single exposure or each distinct exposure (in a 
+multivariate exposure) as long as the user provides appropriate history, inverse probability 
+weights, propensity score strata, and censoring indicators. See Jackson 2016 for details. Note 
+that those particular specifications may not apply to the user’s causal question (e.g. the user
+has data where covariates are measured after exposure for every time point, instead of before 
+exposure). The make.history()functions return nonsense when exposures are partially missing.
 
 
 A warning on required arguments
 
-The diagnostic, approach, scope, and censoring arguments for the lengthen(), balance(), diagnose(), and makeplot() functions are required and must be identical or else the functions will return errors or incorrect results. 
+The diagnostic, approach, scope, and censoring arguments for the lengthen(), balance(), 
+diagnose(), and makeplot() functions are required and must be identical or else the functions 
+will return errors or incorrect results. 
 
 
 ##Example code
 
-Below, we provide an example in which we apply Diagnostic 3 to an artificial data set to illustrate covariate balance for a time-varying exposure without censoring. 
+Below, we provide an example in which we apply Diagnostic 3 to an artificial data set to 
+illustrate covariate balance for a time-varying exposure without censoring. 
 
 ```{r}
 ##########################
@@ -477,7 +542,8 @@ sort.order= c("l","m","o","n","p")
 myplot <- makeplot (
 input=mytable,	
 diagnostic	=3,
-approach="weight", 
+approach="weight",
+#censoring="no",
 scope="all",
 metric="SMD"
 )
@@ -501,6 +567,9 @@ metric="SMD"
 #panel.margin.size=.75,						#space between panels
 #axis.title="Mean Difference",    #or "Standardized Mean Difference" (x-axis title)
 #label.width=15									  #width of panel label text (before wrapping text)
+
+#Display the plot
+myplot
 
 #STEP 4: SAVE BALANCE TABLE AND PLOT
 #write.csv(mytable,paste(path,"mytable.csv",sep=""))

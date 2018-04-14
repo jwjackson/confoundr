@@ -569,16 +569,16 @@ omit.history <- function (input,
 #' @param diagnostic diagnostic of interest e.g. 1, 2, or 3
 #' @param approach adjustment method e.g. "none" or "weight" or "stratify"
 #' @param scope report the entire trellis e.g. "all", the diagonal e.g. "recent", or a summary e.g. "average"
-#' @param recency an integer for the relative distance between exposures and covariate measurements to focus on (e.g. 0 would represent the same timing). The default is 0 for Diagnostics 1 and 3, and 1 for Diagnostic 2
 #' @param average.over summary level for average metrics e.g. standardize over "values" or "history" or "time" or "distance"
 #' @param periods a list of contiguous segments of relative distance to pool over e.g. list(0,1:4,5:10) would yield summaries over three segments
 #' @param list.distance a vector of distances to retain after averaging over time e.g. c(0,2)
+#' @param recency an integer for the relative distance between exposures and covariate measurements to focus on (e.g. 0 would represent the same timing). The default is 0 for Diagnostics 1 and 3, and 1 for Diagnostic 2
 #' @param sort.order vector of root names for all covariates listed in the order in which they should appear in the table (and also plot) e.g. c("n","m","o","l","p"). To display covariates in alphabetical order (the default), leave blank or type "alphabetical"
 #' @param ignore.missing.metric "yes" or "no" depending on whether the user wishes to estimate averages over person-time when there are missing values of the mean difference or standardized mean difference. Missing values for the standardized mean difference can occur when, for example, there is no covariate variation within levels of exposure-history and measurement times. If this argument is set to "no" and there are missing values, the average will also be missing. If set to "yes" an average will be produced that ignores missing values.
 #' @param metric the metric for which the user wishes to ignore missing values as specified in the 'ignore.missing.metric' argument.
 #' @export
 #' @examples
-#' apply.scope(input, diagnostic, approach, scope, recency, average.over, periods, list.distance, sort.order, ignore.missing.metric, metric)
+#' apply.scope(input, diagnostic, approach, scope, average.over, periods, list.distance, recency, sort.order, ignore.missing.metric, metric)
 
 apply.scope <- function (	input,
 							diagnostic,
@@ -1625,13 +1625,14 @@ diagnose <- function (
 #' @param text.legend text to include in legend (optional)
 #' @export
 #' @examples
-#' myplot <- makeplot(input=mytable, diagnostic=3, approach="weight", metric="SMD", scope="all", average.over, stratum, label.exposure, label.covariate, lbound, ubound, ratio, text.axis.title, text.axis.y, text.axis.x, text.strip.y, text.strip.x, point.size, zeroline.size, refline.size, refline.limit.a, refline.limit.b, panel.spacing.size, axis.title, label.width, groupvar, shape, colour, legend.title, legend.position, text.legend)
+#' myplot <- makeplot(input, diagnostic, approach, metric, censoring, scope, average.over, stratum, label.exposure, label.covariate, lbound, ubound, ratio, text.axis.title, text.axis.y, text.axis.x, text.strip.y, text.strip.x, point.size, zeroline.size, refline.size, refline.limit.a, refline.limit.b, panel.spacing.size, axis.title, label.width, groupvar, shape, colour, legend.title, legend.position, text.legend)
 
 
 makeplot <- function (input,
                       diagnostic,
                       approach,
                       metric="SMD",
+                      censoring,
                       scope,
                       average.over=NULL,
                       stratum=NULL,
