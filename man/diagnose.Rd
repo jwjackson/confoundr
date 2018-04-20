@@ -65,5 +65,27 @@ diagnose(input, diagnostic, approach = "none", scope, censoring, id,
 Function to loop over the lengthen() and balance() functions
 }
 \examples{
-diagnose(input, diagnostic, censoring, approach, scope, id, times.exposure, times.covariate, exposure, temporal.covariate, static.covariate, sort.order, history, weight.exposure, censor, weight.censor, strata, recency, average.over, periods, list.distance, ignore.missing.metric, loop)
+diagnose(input,
+         diagnostic,
+         censoring,
+         approach,
+         scope,
+         id,
+         times.exposure,
+         times.covariate,
+         exposure,
+         temporal.covariate,
+         static.covariate,
+         sort.order,
+         history,
+         weight.exposure,
+         censor,
+         weight.censor,
+         strata,
+         recency,
+         average.over,
+         periods,
+         list.distance,
+         ignore.missing.metric,
+         loop)
 }

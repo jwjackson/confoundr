@@ -28,5 +28,12 @@ makehistory.two(input, id, group = NULL, exposure.a, exposure.b,
 Function to create joint exposure history for two distinct time-varying exposures
 }
 \examples{
-mydata.history <- makehistory.two(input=mydata, id=id, times=c(0,1,2), exposure.a="a", exposure.b="z", name.history.a="ha", name.history.b="hb", group="v")
+mydata.history <- makehistory.two(input=mydata,
+                                  id=id,
+                                  times=c(0,1,2),
+                                  exposure.a="a",
+                                  exposure.b="z",
+                                  name.history.a="ha",
+                                  name.history.b="hb",
+                                  group="v")
 }

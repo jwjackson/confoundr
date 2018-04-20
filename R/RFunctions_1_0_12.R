@@ -31,31 +31,63 @@
 #' @import gridExtra
 #' @import scales
 #' @import Rmpfr
-#' @import data.table
 #' @import broom
 #' @import ggplot2
 #' @importFrom magrittr %>%
-#' @importFrom tidyr gather gather_ separate separate_ unite spread
-#' @importFrom dplyr mutate select filter arrange arrange_ summarize group_by group_by_ ungroup first last between
+#' @importFrom tidyr gather gather_ separate separate_ unite unite_ spread
+#' @importFrom dplyr mutate select select_ filter arrange arrange_ summarise group_by group_by_ ungroup first last between bind_rows rename_ left_join desc
+#' @importFrom stats D lag na.omit sd var weighted.mean
 NULL
+
+## quiets concerns of R CMD check regarding macro variables that appear in pipelines
+if(getRversion() >= "2.15.1")  utils::globalVariables(c(".", "E", "GROUP", "H", "N", "Nexp",
+                                                        "S", "SMD", "W", "W_a", "W_s",
+                                                        "comparison", "covariate", "distance",
+                                                        "exp.time", "exp.value", "exp.value.a",
+                                                        "exp.value.b", "exposure",
+                                                        "his.name.time", "his.name.time.a",
+                                                        "his.name.time.b", "his.time",
+                                                        "his.time.a", "his.time.b", "his.value",
+                                                        "his.value.a", "his.value.b",
+                                                        "mean.cov_a", "mean.cov_b",
+                                                        "n.cov_a", "n.cov_b", "n_distinct",
+                                                        "name.cov", "period.end", "period.id",
+                                                        "period.start", "plot.metric",
+                                                        "sd.cov_a", "sd.cov_b",
+                                                        "time.covariate", "time.exposure",
+                                                        "val", "value.cov", "wide.name.cov",
+                                                        "wide.name.exp"
+                                                        ))
+
+
+
 
 ####################
 ##WIDEN() FUNCTION##
 ####################
-	   
-#'Function to create transform data from person-time format to person format suitable for lengthen()
+
+#' Function to create transform data from person-time format to person format suitable for lengthen()
 #' @param input dataframe in long format e.g., a person-time format
 #' @param id unique identifier at the unit (person) level
 #' @param time unique index for each observation within each unit
 #' @param exposure the exposure of interest at time t
-#' @param covariate a vector of covariates at time t	   
+#' @param covariate a vector of covariates at time t
 #' @param history variable describing exposure history through time t
 #' @param weight.exposure inverse probability weight for exposure, at or through time t
-#' @param weight.censor cumulative inverse probability weight for censoring through time t	   
+#' @param weight.censor cumulative inverse probability weight for censoring through time t
 #' @param strata propensity score strata at time t
+#' @param censor censoring indicators at time t
 #' @export
 #' @examples
-#' mydata.wide <- widen(input=mydata.long,id="id", time="time", exposure="a", history="h", covariate=c("l","m","n","o","p"), weight.exposure="wax", weight.censor="wsx", censor="s", strata="e")
+#' mydata.wide <- widen(input=mydata.long,
+#'                      id="id", time="time",
+#'                      exposure="a",
+#'                      history="h",
+#'                      covariate=c("l","m","n","o","p"),
+#'                      weight.exposure="wax",
+#'                      weight.censor="wsx",
+#'                      censor="s",
+#'                      strata="e")
 
 widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=NULL,weight.censor=NULL,strata=NULL,censor=NULL) {
 
@@ -73,13 +105,13 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
   }
   if (is.null(covariate)) {
     stop("ERROR: 'covariate' is missing. Please specify a vector of covariates.")
-  } 
+  }
   if (any(!exposure %in% names(input))) {
     stop("ERROR: The exposure variable is misspelled.")
   }
   if (any(!covariate %in% names(input))) {
     stop("ERROR: One or more covariates are misspelled, or some covariates are missing from the input dataframe.")
-  }  
+  }
   if (!is.null(history) & any(!history %in% names(input))) {
     stop("ERROR: The history variable is misspelled.")
   }
@@ -91,33 +123,34 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
   }
   if (!is.null(weight.censor) & any(!weight.censor %in% names(input))) {
     stop("ERROR: The weight.censor variable is misspelled.")
-  }  
+  }
   if (!is.null(strata) & any(!strata %in% names(input))) {
     stop("ERROR: The strata root name is misspelled.")
-  }  
+  }
 
   input <- input %>%
     rename_(id=id,time=time) %>%
     mutate(id.time=paste(id,time)
-           )  
+    )
 
   if (!all(!input$id.time %in% input$id[duplicated(input$id.time)])) {
     stop("ERROR: id and time do not uniquely identify each observation (i.e. each row). Please specify an identifier and time variable that uniquely identify observations")
   }
-  
+
   variables <- c(exposure,covariate,history,censor,weight.exposure,weight.censor,strata)
-  
+
   if (any(grepl("_", variables))) {
     stop("Please ensure that variable names do not contain an underscore i.e. '_' ")
   }
-  
-  output <- input %>% 
-    select(id,time,variables) %>% 
-    gather(key="var",value="val",variables) %>% 
-    unite(col="var_time",var,time,sep="_") %>% 
+
+  output <- input %>%
+    select(id,time,variables) %>%
+    gather(key="var",value="val",variables) %>%
+    unite(col="var_time",var,time,sep="_") %>%
     spread(key="var_time",value=val)
-    
+
 }
+
 
 ###########################
 ##MAKEHISTORY() FUNCTIONS##
@@ -132,9 +165,21 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
 #' @param group an optional baseline variable upon which to aggregate the exposure history. This argument provides a way to adjust the metrics for a baseline covariate. For example, in the context of a trial, the grouping variable coul be treatment assignment. In the context of a cohort study, this could be site e.g. "v".
 #' @export
 #' @examples
-#' mydata.wide.history <- makehistory.one(input=mydata.wide, id="id", times=c(0,1,2), exposure="a", name.history="h", group="v")
+#' mydata.history <- makehistory.one(input=mydata,
+#'                                   id=id,
+#'                                   times=c(0,1,2),
+#'                                   exposure="a",
+#'                                   name.history="h",
+#'                                   group="v")
 
 makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h") {
+
+#  id="CATIEID"#,
+#  input=catie.wgt.wide#,
+#  times=c(0:18)#,
+#  exposure="lead.studydisc"#,
+#  group=NULL#,
+#  name.history="h.lead.studydisc"
 
   list.exposure <- paste(exposure,times,sep="_")
 
@@ -230,7 +275,14 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
 #' @param group an optional baseline variable upon which to aggregate the exposure history. This argument provides a way to adjust the metrics for a baseline covariate. For example, in the context of a trial, the grouping variable coul be treatment assignment. In the context of a cohort study, this could be site e.g. "v".
 #' @export
 #' @examples
-#' mydata.history <- makehistory.two(input=mydata, id=id, times=c(0,1,2), exposure.a="a", exposure.b="z", name.history.a="ha", name.history.b="hb", group="v")
+#' mydata.history <- makehistory.two(input=mydata,
+#'                                   id=id,
+#'                                   times=c(0,1,2),
+#'                                   exposure.a="a",
+#'                                   exposure.b="z",
+#'                                   name.history.a="ha",
+#'                                   name.history.b="hb",
+#'                                   group="v")
 
 makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.history.a="ha",name.history.b="hb",times) {
 
@@ -350,8 +402,8 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
 
 }
 
-	   
-	   
+
+
 #######################
 ##LENGTHEN() FUNCTION##
 #######################
@@ -373,14 +425,27 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
 #' @param strata the root name for propensity-score strata e.g. "e"
 #' @export
 #' @examples
-#' mydata.tidy <- lengthen(input=mydata.history, diagnostic=3, censoring="yes", id=id, times.exposure=c(0,1,2), times.covariate=c(0,1,2), exposure="a", temporal.covariate=c("l","m","o"), static.covariate=c("n","p"), history="h", weight.exposure="wax", censor="s", weight.censor="ws", strata="e")
+#' mydata.long <- lengthen(input=mydata.history,
+#'                         diagnostic=3,
+#'                         censoring="yes",
+#'                         id=id,
+#'                         times.exposure=c(0,1,2),
+#'                         times.covariate=c(0,1,2),
+#'                         exposure="a",
+#'                         temporal.covariate=c("l","m","o"),
+#'                         static.covariate=c("n","p"),
+#'                         history="h",
+#'                         weight.exposure="wax",
+#'                         censor="s",
+#'                         weight.censor="ws",
+#'                         strata="e")
 
 lengthen <- function (input,
                       diagnostic,
                       censoring,
                       id,
                       times.exposure,
-					  times.covariate,
+					            times.covariate,
                       exposure,
                       temporal.covariate,
                       static.covariate=NULL,
@@ -537,22 +602,22 @@ if (!is.null(weight.exposure) & any(!list.weight.exposure %in% names(input))) {
 step1 <- input[,c(id,list.exposure,list.covariate,list.history,list.weight.exposure,list.weight.censor,list.strata,list.censor)]
 
 if (censoring=="no" | (censoring=="yes" & diagnostic!=2)) {
-  step2 <- step1 %>% gather_(key="wide.name.exp",value="value.exp",c(list.exposure,list.history,list.weight.exposure,list.weight.censor,list.censor,list.strata))
+  step2 <- step1 %>% gather_(key_col="wide.name.exp",value_col="value.exp",c(list.exposure,list.history,list.weight.exposure,list.weight.censor,list.censor,list.strata))
 } else if (censoring=="yes" & diagnostic==2) {
-  step2 <- step1 %>% gather_(key="wide.name.exp",value="value.exp",c(list.exposure,list.history,list.weight.exposure,list.censor,list.strata))
+  step2 <- step1 %>% gather_(key_col="wide.name.exp",value_col="value.exp",c(list.exposure,list.history,list.weight.exposure,list.censor,list.strata))
 }
 
 step3 <- step2 %>% separate(wide.name.exp,c("name.exp","time.exposure"),sep="_") %>%
   spread(key="name.exp",value="value.exp")
 
 if (censoring=="no" | (censoring=="yes" & diagnostic!=2)) {
-  step4 <- step3 %>% gather_(key="wide.name.cov",value="value.cov",list.covariate) %>%
+  step4 <- step3 %>% gather_(key_col="wide.name.cov",value_col="value.cov",list.covariate) %>%
     separate(wide.name.cov,c("name.cov","time.covariate"),sep="_")
 } else if (censoring=="yes" & diagnostic==2) {
-  step4 <- step3 %>% gather_(key="wide.name.cov",value="value.cov",c(list.covariate,list.weight.censor)) %>%
+  step4 <- step3 %>% gather_(key_col="wide.name.cov",value_col="value.cov",c(list.covariate,list.weight.censor)) %>%
     separate(wide.name.cov,c("name.cov","time.covariate"),sep="_") %>%
     spread(key="name.cov",value="value.cov") %>%
-    gather_(key="name.cov",value="value.cov",covariate.unique)
+    gather_(key_col="name.cov",value_col="value.cov",covariate.unique)
 }
 
 if (is.null(list.censor)) {
@@ -583,7 +648,10 @@ step5 %>% mutate(time.exposure=as.numeric(time.exposure),time.covariate=as.numer
 #' @param times a vector of measurement times for the covariate e.g. c(1,2,3)
 #' @export
 #' @examples
-#' mydata.long.omit <- omit.history(input=mydata.long, omission="relative", covariate.name=c("l","m","o"), distance=1)
+#' mydata.long.omit <- omit.history(input=mydata.long,
+#'                                  omission="relative",
+#'                                  covariate.name=c("l","m","o"),
+#'                                  distance=1)
 
 omit.history <- function (input,
                           omission,
@@ -650,7 +718,17 @@ omit.history <- function (input,
 #' @param metric the metric for which the user wishes to ignore missing values as specified in the 'ignore.missing.metric' argument.
 #' @export
 #' @examples
-#' apply.scope(input, diagnostic, approach, scope, average.over, periods, list.distance, recency, sort.order, ignore.missing.metric, metric)
+#' apply.scope(input,
+#'             diagnostic,
+#'             approach,
+#'             scope,
+#'             average.over,
+#'             periods,
+#'             list.distance,
+#'             recency,
+#'             sort.order,
+#'             ignore.missing.metric,
+#'             metric)
 
 apply.scope <- function (	input,
 							diagnostic,
@@ -851,6 +929,7 @@ apply.scope <- function (	input,
 		}
 }
 
+
 ####################
 ##BALANCE FUNCTION##
 ####################
@@ -879,7 +958,24 @@ apply.scope <- function (	input,
 #' @param loop a housekeeping argument the user can ignore. It is automatically set when the balance function is called by the diagnose() function described later. The default is set to "no".
 #' @export
 #' @examples
-#' mytable <- balance(input=mydata.tidy.omit, diagnostic=3, approach="weight", censoring="yes", scope="all", times.exposure=c(0,1,2), times.covariate=c(0,1,2), sort.order=c("l","m","n","o","p"), exposure="a", history="h", weight.exposure="wax", weight.censor="ws", strata="e", recency, average.over, periods, list.distance, ignore.missing.metric, loop)
+#' mytable <- balance(input=mydata.long.omit,
+#'                    diagnostic=3,
+#'                    approach="weight",
+#'                    censoring="yes",
+#'                    scope="all",
+#'                    times.exposure=c(0,1,2),
+#'                    times.covariate=c(0,1,2),
+#'                    sort.order=c("l","m","n","o","p"),
+#'                    exposure="a", history="h",
+#'                    weight.exposure="wax",
+#'                    weight.censor="ws",
+#'                    strata="e",
+#'                    recency,
+#'                    average.over,
+#'                    periods,
+#'                    list.distance,
+#'                    ignore.missing.metric,
+#'                    loop)
 
 balance <- function (input,
                      diagnostic,
@@ -1354,7 +1450,29 @@ balance <- function (input,
 #' @param loop "yes" to iteratively apply balance() and lengthen() or "no" to process all covariates and measurement times at once.
 #' @export
 #' @examples
-#' diagnose(input, diagnostic, censoring, approach, scope, id, times.exposure, times.covariate, exposure, temporal.covariate, static.covariate, sort.order, history, weight.exposure, censor, weight.censor, strata, recency, average.over, periods, list.distance, ignore.missing.metric, loop)
+#' diagnose(input,
+#'          diagnostic,
+#'          censoring,
+#'          approach,
+#'          scope,
+#'          id,
+#'          times.exposure,
+#'          times.covariate,
+#'          exposure,
+#'          temporal.covariate,
+#'          static.covariate,
+#'          sort.order,
+#'          history,
+#'          weight.exposure,
+#'          censor,
+#'          weight.censor,
+#'          strata,
+#'          recency,
+#'          average.over,
+#'          periods,
+#'          list.distance,
+#'          ignore.missing.metric,
+#'          loop)
 
 
 diagnose <- function (
@@ -1474,7 +1592,7 @@ diagnose <- function (
 
 			results.all <- c(results.temporal,results.static)
 			output <- results.all %>%
-				rbindlist() %>%
+				bind_rows() %>%
 					as.data.frame() %>%
 						apply.scope (
 							diagnostic=diagnostic,
@@ -1551,7 +1669,7 @@ diagnose <- function (
 
 			results.all <- c(results.temporal,results.static)
 			output <- results.all %>%
-				rbindlist() %>%
+				bind_rows() %>%
 					as.data.frame() %>%
 						apply.scope (
 							diagnostic=diagnostic,
@@ -1631,7 +1749,7 @@ diagnose <- function (
 
 			results.all <- c(results.temporal,results.static)
 			output <- results.all %>%
-				rbindlist() %>%
+				bind_rows() %>%
 					as.data.frame() %>%
 						apply.scope (
 							diagnostic=diagnostic,
@@ -1697,7 +1815,38 @@ diagnose <- function (
 #' @param text.legend text to include in legend (optional)
 #' @export
 #' @examples
-#' myplot <- makeplot(input, diagnostic, approach, metric, censoring, scope, average.over, stratum, label.exposure, label.covariate, lbound, ubound, ratio, text.axis.title, text.axis.y, text.axis.x, text.strip.y, text.strip.x, point.size, zeroline.size, refline.size, refline.limit.a, refline.limit.b, panel.spacing.size, axis.title, label.width, groupvar, shape, colour, legend.title, legend.position, text.legend)
+#' myplot <- makeplot(input,
+#'                    diagnostic,
+#'                    approach,
+#'                    metric,
+#'                    censoring,
+#'                    scope,
+#'                    average.over,
+#'                    stratum,
+#'                    label.exposure,
+#'                    label.covariate,
+#'                    lbound,
+#'                    ubound,
+#'                    ratio,
+#'                    text.axis.title,
+#'                    text.axis.y,
+#'                    text.axis.x,
+#'                    text.strip.y,
+#'                    text.strip.x,
+#'                    point.size,
+#'                    zeroline.size,
+#'                    refline.size,
+#'                    refline.limit.a,
+#'                    refline.limit.b,
+#'                    panel.spacing.size,
+#'                    axis.title,
+#'                    label.width,
+#'                    groupvar,
+#'                    shape,
+#'                    colour,
+#'                    legend.title,
+#'                    legend.position,
+#'                    text.legend)
 
 
 makeplot <- function (input,
@@ -1800,8 +1949,8 @@ makeplot <- function (input,
 				  legend.position=legend.position,
 				  legend.key = element_rect(fill='white'),
 				  legend.title=element_text(size=text.legend),
-				  legend.text=element_text(size=text.legend),
-				  #plot.margin = unit(plot.margin.size,"mm")
+				  legend.text=element_text(size=text.legend)
+				  #,plot.margin = unit(plot.margin.size,"mm")
 				  )
 
   if (is.null(average.over)) {

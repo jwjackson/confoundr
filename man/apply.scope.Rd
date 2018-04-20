@@ -5,9 +5,8 @@
 \title{Function to subset the output table from balance() or diagnose() to covariate balance metrics at a certain distance (e.g. a certain recency) or produce estimates that average over person-time.}
 \usage{
 apply.scope(input, diagnostic, approach, scope = "all", average.over = NULL,
-  periods = NULL, list.distance = NULL, recency = NULL,
-  sort.order = "alphabetical", ignore.missing.metric = "no",
-  metric = "SMD")
+  periods = NULL, list.distance = NULL, recency = NULL, metric = "SMD",
+  sort.order = "alphabetical", ignore.missing.metric = "no")
 }
 \arguments{
 \item{input}{dataframe output by diagnose() or balance() function}
@@ -26,15 +25,25 @@ apply.scope(input, diagnostic, approach, scope = "all", average.over = NULL,
 
 \item{recency}{an integer for the relative distance between exposures and covariate measurements to focus on (e.g. 0 would represent the same timing). The default is 0 for Diagnostics 1 and 3, and 1 for Diagnostic 2}
 
+\item{metric}{the metric for which the user wishes to ignore missing values as specified in the 'ignore.missing.metric' argument.}
+
 \item{sort.order}{vector of root names for all covariates listed in the order in which they should appear in the table (and also plot) e.g. c("n","m","o","l","p"). To display covariates in alphabetical order (the default), leave blank or type "alphabetical"}
 
 \item{ignore.missing.metric}{"yes" or "no" depending on whether the user wishes to estimate averages over person-time when there are missing values of the mean difference or standardized mean difference. Missing values for the standardized mean difference can occur when, for example, there is no covariate variation within levels of exposure-history and measurement times. If this argument is set to "no" and there are missing values, the average will also be missing. If set to "yes" an average will be produced that ignores missing values.}
-
-\item{metric}{the metric for which the user wishes to ignore missing values as specified in the 'ignore.missing.metric' argument.}
 }
 \description{
 Function to subset the output table from balance() or diagnose() to covariate balance metrics at a certain distance (e.g. a certain recency) or produce estimates that average over person-time.
 }
 \examples{
-apply.scope(input, diagnostic, approach, scope, average.over, periods, list.distance, recency, sort.order, ignore.missing.metric, metric)
+apply.scope(input,
+            diagnostic,
+            approach,
+            scope,
+            average.over,
+            periods,
+            list.distance,
+            recency,
+            sort.order,
+            ignore.missing.metric,
+            metric)
 }
