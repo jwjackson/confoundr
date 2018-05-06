@@ -56,7 +56,7 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(c(".", "E", "GROUP", "H", 
                                                         "sd.cov_a", "sd.cov_b",
                                                         "time.covariate", "time.exposure",
                                                         "val", "value.cov", "wide.name.cov",
-                                                        "wide.name.exp"
+                                                        "wide.name.exp", "ignore.missing.metric"
                                                         ))
 
 
