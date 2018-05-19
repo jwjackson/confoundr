@@ -56,7 +56,11 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(c(".", "E", "GROUP", "H", 
                                                         "sd.cov_a", "sd.cov_b",
                                                         "time.covariate", "time.exposure",
                                                         "val", "value.cov", "wide.name.cov",
-                                                        "wide.name.exp", "ignore.missing.metric"
+                                                        "wide.name.exp", "input", "diagnostic",
+                                                        "approach", "scope", "average.over",
+                                                        "periods", "list.distance", "recency",
+                                                        "sort.order", "metric",
+                                                        "ignore.missing.metric"
                                                         ))
 
 
@@ -92,13 +96,13 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(c(".", "E", "GROUP", "H", 
 widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=NULL,weight.censor=NULL,strata=NULL,censor=NULL) {
 
   if (is.null(input)) {
-    stop("ERROR: 'input' is missing or misspecified. Please specify a dataframe in 'long' i.e. persont-time format")
+    stop("ERROR: 'input' is missing or misspecified. Please specify a dataframe in 'long' i.e. person-time format")
   }
   if (is.null(id)) {
     stop("ERROR: 'id' is missing or misspecified. Please specify a unique identifier for each observation.")
   }
   if (is.null(time)) {
-    stop("ERROR: 'time' is missing or misspecified. Please specify a variabe for the timing of each observation.")
+    stop("ERROR: 'time' is missing or misspecified. Please specify a variable for the timing of each observation.")
   }
   if (is.null(exposure)) {
     stop("ERROR: 'exposure' is missing. Please specify the root name for exposure.")
@@ -162,7 +166,7 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
 #' @param times a vector of measurement times e.g. c(0,1,2)
 #' @param exposure the root name for exposure e.g. "a"
 #' @param name.history desired root name for time-indexed history variables e.g. "h"
-#' @param group an optional baseline variable upon which to aggregate the exposure history. This argument provides a way to adjust the metrics for a baseline covariate. For example, in the context of a trial, the grouping variable coul be treatment assignment. In the context of a cohort study, this could be site e.g. "v".
+#' @param group an optional baseline variable upon which to aggregate the exposure history. This argument provides a way to adjust the metrics for a baseline covariate. For example, in the context of a trial, the grouping variable could be treatment assignment. In the context of a cohort study, this could be site e.g. "v".
 #' @export
 #' @examples
 #' mydata.history <- makehistory.one(input=mydata,
@@ -173,13 +177,6 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
 #'                                   group="v")
 
 makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h") {
-
-#  id="CATIEID"#,
-#  input=catie.wgt.wide#,
-#  times=c(0:18)#,
-#  exposure="lead.studydisc"#,
-#  group=NULL#,
-#  name.history="h.lead.studydisc"
 
   list.exposure <- paste(exposure,times,sep="_")
 

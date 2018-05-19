@@ -14,7 +14,7 @@ makehistory.one(input, id, times, group = NULL, exposure,
 
 \item{times}{a vector of measurement times e.g. c(0,1,2)}
 
-\item{group}{an optional baseline variable upon which to aggregate the exposure history. This argument provides a way to adjust the metrics for a baseline covariate. For example, in the context of a trial, the grouping variable coul be treatment assignment. In the context of a cohort study, this could be site e.g. "v".}
+\item{group}{an optional baseline variable upon which to aggregate the exposure history. This argument provides a way to adjust the metrics for a baseline covariate. For example, in the context of a trial, the grouping variable could be treatment assignment. In the context of a cohort study, this could be site e.g. "v".}
 
 \item{exposure}{the root name for exposure e.g. "a"}
 

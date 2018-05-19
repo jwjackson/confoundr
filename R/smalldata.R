@@ -6,6 +6,9 @@
 #' indicators. Time-varying inverse-probability-of-exposure
 #' weights and censoring weights are available as well.
 #'
+#' @docType data
+#' @usage data(example_sml)
+#'
 #' @format A data frame with 10,000 rows and 38 variables:
 #' \describe{
 #'     \item{X1}{row label, can be ignored}

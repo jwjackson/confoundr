@@ -59,7 +59,7 @@
 
     }}
 \usage{
-example_sml
+data(example_sml)
 }
 \description{
 The example_sml data set contains 10,000 records and 38

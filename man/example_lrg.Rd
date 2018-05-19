@@ -59,7 +59,7 @@
 
     }}
 \usage{
-example_lrg
+data(example_lrg)
 }
 \description{
 The example_lrg data set contains 100,000 records and 38

@@ -34,8 +34,7 @@ Imports: grid,
     magrittr (>= 1.5),
     tidyr (>= 0.6.0),
     dplyr (>= 0.5.0),
-    stats,
-    readr
+    stats
 LazyData: TRUE
 VignetteBuilder: knitr
 Suggests:
