@@ -41,19 +41,3 @@ lengthen(input, diagnostic, censoring, id, times.exposure, times.covariate,
 \description{
 Function to create a "tidy" dataframe where the key observation is the paring of exposure and covariate measurement times
 }
-\examples{
-mydata.long <- lengthen(input=mydata.history,
-                        diagnostic=3,
-                        censoring="yes",
-                        id=id,
-                        times.exposure=c(0,1,2),
-                        times.covariate=c(0,1,2),
-                        exposure="a",
-                        temporal.covariate=c("l","m","o"),
-                        static.covariate=c("n","p"),
-                        history="h",
-                        weight.exposure="wax",
-                        censor="s",
-                        weight.censor="ws",
-                        strata="e")
-}

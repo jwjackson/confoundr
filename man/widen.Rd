@@ -32,14 +32,3 @@ widen(input, id, time, exposure, covariate, history = NULL,
 \description{
 Function to create transform data from person-time format to person format suitable for lengthen()
 }
-\examples{
-mydata.wide <- widen(input=mydata.long,
-                     id="id", time="time",
-                     exposure="a",
-                     history="h",
-                     covariate=c("l","m","n","o","p"),
-                     weight.exposure="wax",
-                     weight.censor="wsx",
-                     censor="s",
-                     strata="e")
-}

@@ -20,9 +20,3 @@ omit.history(input, omission, covariate.name, distance = NULL, times = NULL)
 \description{
 Function to remove irrelevant covariate history from balance tables and plots
 }
-\examples{
-mydata.long.omit <- omit.history(input=mydata.long,
-                                 omission="relative",
-                                 covariate.name=c("l","m","o"),
-                                 distance=1)
-}

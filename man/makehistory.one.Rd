@@ -23,11 +23,3 @@ makehistory.one(input, id, times, group = NULL, exposure,
 \description{
 Function to create exposure history for a single time varying exposure
 }
-\examples{
-mydata.history <- makehistory.one(input=mydata,
-                                  id=id,
-                                  times=c(0,1,2),
-                                  exposure="a",
-                                  name.history="h",
-                                  group="v")
-}

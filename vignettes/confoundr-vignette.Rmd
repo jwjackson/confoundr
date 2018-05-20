@@ -40,7 +40,7 @@ library(broom)    #last tested on broom v0.4.1
 
 # Load the example data
 data("example_sml")
-data("example_lrg")
+
 
 #####################################################################
 ##Example: Diagnostic 3 for a time-varying exposure without censoring

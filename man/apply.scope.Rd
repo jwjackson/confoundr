@@ -35,16 +35,3 @@ apply.scope(input, diagnostic, approach, scope = "all", average.over = NULL,
 \description{
 Function to subset the output table from balance() or diagnose() to covariate balance metrics at a certain distance (e.g. a certain recency) or produce estimates that average over person-time.
 }
-\examples{
-apply.scope(input,
-            diagnostic,
-            approach,
-            scope,
-            average.over,
-            periods,
-            list.distance,
-            recency,
-            sort.order,
-            ignore.missing.metric,
-            metric)
-}

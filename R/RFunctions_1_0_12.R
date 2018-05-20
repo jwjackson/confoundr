@@ -82,16 +82,16 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(c(".", "E", "GROUP", "H", 
 #' @param strata propensity score strata at time t
 #' @param censor censoring indicators at time t
 #' @export
-#' @examples
-#' mydata.wide <- widen(input=mydata.long,
-#'                      id="id", time="time",
-#'                      exposure="a",
-#'                      history="h",
-#'                      covariate=c("l","m","n","o","p"),
-#'                      weight.exposure="wax",
-#'                      weight.censor="wsx",
-#'                      censor="s",
-#'                      strata="e")
+# @examples
+# mydata.wide <- widen(input=mydata.long,
+#                      id="id", time="time",
+#                      exposure="a",
+#                      history="h",
+#                      covariate=c("l","m","n","o","p"),
+#                      weight.exposure="wax",
+#                      weight.censor="wsx",
+#                      censor="s",
+#                      strata="e")
 
 widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=NULL,weight.censor=NULL,strata=NULL,censor=NULL) {
 
@@ -168,13 +168,12 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
 #' @param name.history desired root name for time-indexed history variables e.g. "h"
 #' @param group an optional baseline variable upon which to aggregate the exposure history. This argument provides a way to adjust the metrics for a baseline covariate. For example, in the context of a trial, the grouping variable could be treatment assignment. In the context of a cohort study, this could be site e.g. "v".
 #' @export
-#' @examples
-#' mydata.history <- makehistory.one(input=mydata,
-#'                                   id=id,
-#'                                   times=c(0,1,2),
-#'                                   exposure="a",
-#'                                   name.history="h",
-#'                                   group="v")
+# @examples
+# mydata.history <- makehistory.one(input=example_sml,
+#                                   id="id",
+#                                   times=c(0,1,2),
+#                                   exposure="a",
+#                                   name.history="h")
 
 makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h") {
 
@@ -271,15 +270,15 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
 #' @param name.history.b desired root name for the second time-indexed history variables e.g. "hb"
 #' @param group an optional baseline variable upon which to aggregate the exposure history. This argument provides a way to adjust the metrics for a baseline covariate. For example, in the context of a trial, the grouping variable coul be treatment assignment. In the context of a cohort study, this could be site e.g. "v".
 #' @export
-#' @examples
-#' mydata.history <- makehistory.two(input=mydata,
-#'                                   id=id,
-#'                                   times=c(0,1,2),
-#'                                   exposure.a="a",
-#'                                   exposure.b="z",
-#'                                   name.history.a="ha",
-#'                                   name.history.b="hb",
-#'                                   group="v")
+# @examples
+# mydata.history <- makehistory.two(input=mydata,
+#                                   id=id,
+#                                   times=c(0,1,2),
+#                                   exposure.a="a",
+#                                   exposure.b="z",
+#                                   name.history.a="ha",
+#                                   name.history.b="hb",
+#                                   group="v")
 
 makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.history.a="ha",name.history.b="hb",times) {
 
@@ -421,21 +420,19 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
 #' @param weight.censor the root name for censoring weights e.g. "ws"
 #' @param strata the root name for propensity-score strata e.g. "e"
 #' @export
-#' @examples
-#' mydata.long <- lengthen(input=mydata.history,
-#'                         diagnostic=3,
-#'                         censoring="yes",
-#'                         id=id,
-#'                         times.exposure=c(0,1,2),
-#'                         times.covariate=c(0,1,2),
-#'                         exposure="a",
-#'                         temporal.covariate=c("l","m","o"),
-#'                         static.covariate=c("n","p"),
-#'                         history="h",
-#'                         weight.exposure="wax",
-#'                         censor="s",
-#'                         weight.censor="ws",
-#'                         strata="e")
+# @examples
+# mydata.long <- lengthen(input=example_sml,
+#                         diagnostic=3,
+#                         censoring="no",
+#                         id="id",
+#                         times.exposure=c(0,1,2),
+#                         times.covariate=c(0,1,2),
+#                         exposure="a",
+#                         temporal.covariate=c("l","m","o"),
+#                         static.covariate=c("n","p"),
+#                         history="h",
+#                         weight.exposure="wax")
+
 
 lengthen <- function (input,
                       diagnostic,
@@ -644,11 +641,11 @@ step5 %>% mutate(time.exposure=as.numeric(time.exposure),time.covariate=as.numer
 #' @param distance the distance between exposure and covariate measurements e.g. 2
 #' @param times a vector of measurement times for the covariate e.g. c(1,2,3)
 #' @export
-#' @examples
-#' mydata.long.omit <- omit.history(input=mydata.long,
-#'                                  omission="relative",
-#'                                  covariate.name=c("l","m","o"),
-#'                                  distance=1)
+# @examples
+# mydata.long.omit <- omit.history(input=mydata.long,
+#                                  omission="relative",
+#                                  covariate.name=c("l","m","o"),
+#                                  distance=1)
 
 omit.history <- function (input,
                           omission,
@@ -714,18 +711,18 @@ omit.history <- function (input,
 #' @param ignore.missing.metric "yes" or "no" depending on whether the user wishes to estimate averages over person-time when there are missing values of the mean difference or standardized mean difference. Missing values for the standardized mean difference can occur when, for example, there is no covariate variation within levels of exposure-history and measurement times. If this argument is set to "no" and there are missing values, the average will also be missing. If set to "yes" an average will be produced that ignores missing values.
 #' @param metric the metric for which the user wishes to ignore missing values as specified in the 'ignore.missing.metric' argument.
 #' @export
-#' @examples
-#' apply.scope(input,
-#'             diagnostic,
-#'             approach,
-#'             scope,
-#'             average.over,
-#'             periods,
-#'             list.distance,
-#'             recency,
-#'             sort.order,
-#'             ignore.missing.metric,
-#'             metric)
+# @examples
+# apply.scope(input,
+#             diagnostic,
+#             approach,
+#             scope,
+#             average.over,
+#             periods,
+#             list.distance,
+#             recency,
+#             sort.order,
+#             ignore.missing.metric,
+#             metric)
 
 apply.scope <- function (	input,
 							diagnostic,
@@ -954,25 +951,17 @@ apply.scope <- function (	input,
 #' @param sd.ref "yes" or "no" depending on whether the user wishes to use the standard deviation of the reference group when calculating the SMD.
 #' @param loop a housekeeping argument the user can ignore. It is automatically set when the balance function is called by the diagnose() function described later. The default is set to "no".
 #' @export
-#' @examples
-#' mytable <- balance(input=mydata.long.omit,
-#'                    diagnostic=3,
-#'                    approach="weight",
-#'                    censoring="yes",
-#'                    scope="all",
-#'                    times.exposure=c(0,1,2),
-#'                    times.covariate=c(0,1,2),
-#'                    sort.order=c("l","m","n","o","p"),
-#'                    exposure="a", history="h",
-#'                    weight.exposure="wax",
-#'                    weight.censor="ws",
-#'                    strata="e",
-#'                    recency,
-#'                    average.over,
-#'                    periods,
-#'                    list.distance,
-#'                    ignore.missing.metric,
-#'                    loop)
+# @examples
+# mytable <- balance(input=mydata.long.omit,
+#                    diagnostic=3,
+#                    approach="weight",
+#                    censoring="no",
+#                    scope="all",
+#                    times.exposure=c(0,1,2),
+#                    times.covariate=c(0,1,2),
+#                    sort.order=c("l","m","n","o","p"),
+#                    exposure="a", history="h",
+#                    weight.exposure="wax")
 
 balance <- function (input,
                      diagnostic,
@@ -1446,30 +1435,30 @@ balance <- function (input,
 #' @param metric the metric for which the user wishes to ignore missing values as specified in the 'ignore.missing.metric' argument.
 #' @param loop "yes" to iteratively apply balance() and lengthen() or "no" to process all covariates and measurement times at once.
 #' @export
-#' @examples
-#' diagnose(input,
-#'          diagnostic,
-#'          censoring,
-#'          approach,
-#'          scope,
-#'          id,
-#'          times.exposure,
-#'          times.covariate,
-#'          exposure,
-#'          temporal.covariate,
-#'          static.covariate,
-#'          sort.order,
-#'          history,
-#'          weight.exposure,
-#'          censor,
-#'          weight.censor,
-#'          strata,
-#'          recency,
-#'          average.over,
-#'          periods,
-#'          list.distance,
-#'          ignore.missing.metric,
-#'          loop)
+# @examples
+# diagnose(input,
+#          diagnostic,
+#          censoring,
+#          approach,
+#          scope,
+#          id,
+#          times.exposure,
+#          times.covariate,
+#          exposure,
+#          temporal.covariate,
+#          static.covariate,
+#          sort.order,
+#          history,
+#          weight.exposure,
+#          censor,
+#          weight.censor,
+#          strata,
+#          recency,
+#          average.over,
+#          periods,
+#          list.distance,
+#          ignore.missing.metric,
+#          loop)
 
 
 diagnose <- function (
@@ -1811,39 +1800,15 @@ diagnose <- function (
 #' @param legend.position position of legend (default = "bottom")
 #' @param text.legend text to include in legend (optional)
 #' @export
-#' @examples
-#' myplot <- makeplot(input,
-#'                    diagnostic,
-#'                    approach,
-#'                    metric,
-#'                    censoring,
-#'                    scope,
-#'                    average.over,
-#'                    stratum,
-#'                    label.exposure,
-#'                    label.covariate,
-#'                    lbound,
-#'                    ubound,
-#'                    ratio,
-#'                    text.axis.title,
-#'                    text.axis.y,
-#'                    text.axis.x,
-#'                    text.strip.y,
-#'                    text.strip.x,
-#'                    point.size,
-#'                    zeroline.size,
-#'                    refline.size,
-#'                    refline.limit.a,
-#'                    refline.limit.b,
-#'                    panel.spacing.size,
-#'                    axis.title,
-#'                    label.width,
-#'                    groupvar,
-#'                    shape,
-#'                    colour,
-#'                    legend.title,
-#'                    legend.position,
-#'                    text.legend)
+# @examples
+# myplot <- makeplot (input=mytable,
+#                     diagnostic=3,
+#                     approach="weight",
+#                     censoring="no",
+#                     scope="all",
+#                     metric="SMD"
+#                     )
+
 
 
 makeplot <- function (input,

@@ -57,23 +57,3 @@ balance(input, diagnostic, approach = "none", censoring, scope,
 \description{
 Function to create a balance table for a specified diagnostic
 }
-\examples{
-mytable <- balance(input=mydata.long.omit,
-                   diagnostic=3,
-                   approach="weight",
-                   censoring="yes",
-                   scope="all",
-                   times.exposure=c(0,1,2),
-                   times.covariate=c(0,1,2),
-                   sort.order=c("l","m","n","o","p"),
-                   exposure="a", history="h",
-                   weight.exposure="wax",
-                   weight.censor="ws",
-                   strata="e",
-                   recency,
-                   average.over,
-                   periods,
-                   list.distance,
-                   ignore.missing.metric,
-                   loop)
-}
