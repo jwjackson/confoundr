@@ -27,3 +27,37 @@ makehistory.two(input, id, group = NULL, exposure.a, exposure.b,
 \description{
 Function to create joint exposure history for two distinct time-varying exposures
 }
+\examples{
+# Simulate wide data set for two subjects
+id <- as.numeric(c(1, 2))
+a_0 <- as.numeric(c(0, 1))
+a_1 <- as.numeric(c(1, 1))
+a_2 <- as.numeric(c(1, 0))
+z_0 <- as.numeric(c(1, 0))
+z_1 <- as.numeric(c(0, 0))
+z_2 <- as.numeric(c(0, 1))
+l_0 <- as.numeric(rbinom(2, 1, 0.5))
+l_1 <- as.numeric(rbinom(2, 1, 0.5))
+l_2 <- as.numeric(rbinom(2, 1, 0.5))
+m_0 <- as.numeric(rbinom(2, 1, 0.5))
+m_1 <- as.numeric(rbinom(2, 1, 0.5))
+m_2 <- as.numeric(rbinom(2, 1, 0.5))
+n_0 <- as.numeric(rbinom(2, 1, 0.5))
+n_1 <- as.numeric(rbinom(2, 1, 0.5))
+n_2 <- as.numeric(rbinom(2, 1, 0.5))
+
+mydata.wide <- data.frame(id, a_0, a_1, a_2,
+                          z_0, z_1, z_2,
+                          l_0, l_1, l_2,
+                          m_0, m_1, m_2,
+                          n_0, n_1, n_2)
+# Run the makehistory.two() function
+mydata.history <- makehistory.two(input=mydata.wide,
+                                  id="id",
+                                  times=c(0,1,2),
+                                  exposure.a="a",
+                                  exposure.b="z",
+                                  name.history.a="ha",
+                                  name.history.b="hb"
+                                 )
+}

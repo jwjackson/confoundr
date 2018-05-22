@@ -64,3 +64,22 @@ diagnose(input, diagnostic, approach = "none", scope, censoring, id,
 \description{
 Function to loop over the lengthen() and balance() functions
 }
+\examples{
+# This example uses the included "example_sml.rda" data set
+
+diagnose(input=example_sml,
+         diagnostic=1,
+         censoring="no",
+         approach="none",
+         scope="all",
+         id="id",
+         times.exposure=c(0,1,2),
+         times.covariate=c(0,1,2),
+         exposure="a",
+         temporal.covariate=c("l","m","n"),
+         static.covariate=c("o", "p"),
+         sort.order="alphabetical",
+         history="h",
+         ignore.missing.metric="no",
+         loop="yes")
+}

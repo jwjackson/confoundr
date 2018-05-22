@@ -23,3 +23,32 @@ makehistory.one(input, id, times, group = NULL, exposure,
 \description{
 Function to create exposure history for a single time varying exposure
 }
+\examples{
+# Simulate wide data set for two subjects
+id <- as.numeric(c(1, 2))
+a_0 <- as.numeric(c(0, 1))
+a_1 <- as.numeric(c(1, 1))
+a_2 <- as.numeric(c(1, 0))
+l_0 <- as.numeric(rbinom(2, 1, 0.5))
+l_1 <- as.numeric(rbinom(2, 1, 0.5))
+l_2 <- as.numeric(rbinom(2, 1, 0.5))
+m_0 <- as.numeric(rbinom(2, 1, 0.5))
+m_1 <- as.numeric(rbinom(2, 1, 0.5))
+m_2 <- as.numeric(rbinom(2, 1, 0.5))
+n_0 <- as.numeric(rbinom(2, 1, 0.5))
+n_1 <- as.numeric(rbinom(2, 1, 0.5))
+n_2 <- as.numeric(rbinom(2, 1, 0.5))
+
+mydata.wide <- data.frame(id, a_0, a_1, a_2,
+                          l_0, l_1, l_2,
+                          m_0, m_1, m_2,
+                          n_0, n_1, n_2)
+
+# Run the makehistory.one() function
+mydata.history <- makehistory.one(input=mydata.wide,
+                                 id="id",
+                                  times=c(0,1,2),
+                                  exposure="a",
+                                  name.history="h"
+                                  )
+}

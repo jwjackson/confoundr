@@ -57,3 +57,30 @@ balance(input, diagnostic, approach = "none", censoring, scope,
 \description{
 Function to create a balance table for a specified diagnostic
 }
+\examples{
+# Simulate the output of lengthen() or omit.history()
+id <- as.numeric(rep(c(1,1,1,2,2,2), 70))
+time.exposure <- as.numeric(rep(c(0,1,2), 140))
+a <- as.character(rep(c(0,1,1,1,0,0), 70))
+h <- as.character(rep(c("H","H0","H01","H","H0","H01"), 70))
+name.cov <- as.character(c(rep("n",60), rep("l",180), rep("m",180)))
+time.covariate <- as.numeric(rep(c(rep(0,7), rep(1,7), rep(2,7)), 60))
+value.cov <- as.numeric(rnorm(420, 2, 3))
+
+mydata.long.omit <- data.frame(id, time.exposure, a, h,
+                               name.cov, time.covariate, value.cov)
+
+
+# Run the balance() function
+mytable <- balance(input=mydata.long.omit,
+                   diagnostic=1,
+                   approach="none",
+                   censoring="no",
+                   scope="all",
+                   times.exposure=c(0,1,2),
+                   times.covariate=c(0,1),
+                   sort.order=c("l","m","n"),
+                   exposure="a",
+                   history="h"
+                   )
+}

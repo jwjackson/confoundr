@@ -32,3 +32,21 @@ widen(input, id, time, exposure, covariate, history = NULL,
 \description{
 Function to create transform data from person-time format to person format suitable for lengthen()
 }
+\examples{
+# Simulate long data set for two subjects
+id <- as.numeric(c(1, 1, 1, 2, 2, 2))
+time <- as.numeric(c(0, 1, 2, 0, 1, 2))
+a <- as.numeric(c(0, 1, 1, 1, 1, 0))
+l <- as.numeric(rbinom(6, 1, 0.5))
+m <- as.numeric(rbinom(6, 1, 0.5))
+n <- as.numeric(rbinom(6, 1, 0.5))
+
+mydata.long <- data.frame(id, time, a, l, m, n)
+
+# Run the widen() function
+mydata.wide <- widen(input=mydata.long,
+                     id="id", time="time",
+                     exposure="a",
+                     covariate=c("l","m","n")
+                     )
+}

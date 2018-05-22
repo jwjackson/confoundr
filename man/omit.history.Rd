@@ -20,3 +20,28 @@ omit.history(input, omission, covariate.name, distance = NULL, times = NULL)
 \description{
 Function to remove irrelevant covariate history from balance tables and plots
 }
+\examples{
+# Simulate the output of lengthen()
+id <- as.numeric(rep(c(1,1,1,2,2,2), 7))
+time.exposure <- as.numeric(rep(c(0,1,2), 14))
+a <- as.character(rep(c(0,1,1,1,1,0), 7))
+h <- as.character(rep(c("H","H0","H01","H","H1","H11"), 7))
+
+name.cov <- as.character(c(rep("n",6), rep("l",18), rep("m",18)))
+
+time.covariate <- as.numeric(c(rep(0,6), rep(c(rep(0,6),
+                               rep(1,6),rep(2,6)), 2)))
+
+value.cov <- as.numeric(c(rep(1,9), rep(0,3), rep(1,6),
+                          rep(0,3), rep(1,3), rep(0,12),
+                          rep(1,3), rep(0,3)))
+
+mydata.long <- data.frame(id, time.exposure, a, h,
+                          name.cov, time.covariate, value.cov)
+
+# Run the omit.history() function
+mydata.long.omit <- omit.history(input=mydata.long,
+                                 omission="relative",
+                                 covariate.name=c("l","m"),
+                                 distance=1)
+}

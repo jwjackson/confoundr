@@ -41,3 +41,42 @@ lengthen(input, diagnostic, censoring, id, times.exposure, times.covariate,
 \description{
 Function to create a "tidy" dataframe where the key observation is the paring of exposure and covariate measurement times
 }
+\examples{
+# Simulate wide data set with history
+id <- as.numeric(c(1, 2))
+a_0 <- as.numeric(c(0, 1))
+a_1 <- as.numeric(c(1, 1))
+a_2 <- as.numeric(c(1, 0))
+l_0 <- as.numeric(rbinom(2, 1, 0.5))
+l_1 <- as.numeric(rbinom(2, 1, 0.5))
+l_2 <- as.numeric(rbinom(2, 1, 0.5))
+m_0 <- as.numeric(rbinom(2, 1, 0.5))
+m_1 <- as.numeric(rbinom(2, 1, 0.5))
+m_2 <- as.numeric(rbinom(2, 1, 0.5))
+n_0 <- as.numeric(rbinom(2, 1, 0.5))
+n_1 <- as.numeric(rbinom(2, 1, 0.5))
+n_2 <- as.numeric(rbinom(2, 1, 0.5))
+h_0 <- as.character(c("H", "H"))
+h_1 <- as.character(c("H0", "H1"))
+h_2 <- as.character(c("H01", "H11"))
+
+mydata.history <- data.frame(id, a_0, a_1, a_2,
+                             l_0, l_1, l_2,
+                             m_0, m_1, m_2,
+                             n_0, n_1, n_2,
+                             h_0, h_1, h_2,
+                             stringsAsFactors=FALSE)
+
+# Run the lengthen() function
+mydata.long <- lengthen(input=mydata.history,
+                        diagnostic=1,
+                        censoring="no",
+                        id="id",
+                        times.exposure=c(0,1,2),
+                        times.covariate=c(0,1,2),
+                        exposure="a",
+                        temporal.covariate=c("l","m"),
+                        static.covariate=c("n"),
+                        history="h"
+                        )
+}

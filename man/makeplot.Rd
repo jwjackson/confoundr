@@ -82,3 +82,28 @@ makeplot(input, diagnostic, approach, metric = "SMD", censoring, scope,
 \description{
 Function to create balance plot for a specified diagnostic
 }
+\examples{
+# Simulate the output of balance()
+E <- as.numeric(rep(1,15))
+H <- as.character(c(rep("H",3), rep("H0",6), rep("H01",6)))
+name.cov <- as.character(c("l","m","n","l","l","m","m","n","n",
+                           "l","l","m","m","n","n"))
+time.exposure <- as.numeric(c(rep(0,3), rep(1,6), rep(2,6)))
+time.covariate <- as.numeric(c(0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1))
+D <- as.numeric(rnorm(15, 0.008401823, 0.1229099))
+SMD <- as.numeric(rnorm(15, 0.01233356, 0.2696507))
+N <- as.numeric(c(27,24,9,18,25,16,26,6,9,18,17,16,17,6,6))
+Nexp <- as.numeric(c(14,12,4,9,12,8,13,3,5,9,8,8,9,3,3))
+
+mytable <- data.frame(E, H, name.cov, time.exposure,
+                      time.covariate, D, SMD, N, Nexp)
+
+# Run the balance() function
+myplot <- makeplot (input=mytable,
+                    diagnostic=1,
+                    approach="none",
+                    censoring="no",
+                    scope="all",
+                    metric="SMD"
+                    )
+}

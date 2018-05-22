@@ -82,16 +82,23 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(c(".", "E", "GROUP", "H", 
 #' @param strata propensity score strata at time t
 #' @param censor censoring indicators at time t
 #' @export
-# @examples
-# mydata.wide <- widen(input=mydata.long,
-#                      id="id", time="time",
-#                      exposure="a",
-#                      history="h",
-#                      covariate=c("l","m","n","o","p"),
-#                      weight.exposure="wax",
-#                      weight.censor="wsx",
-#                      censor="s",
-#                      strata="e")
+#' @examples
+#' # Simulate long data set for two subjects
+#' id <- as.numeric(c(1, 1, 1, 2, 2, 2))
+#' time <- as.numeric(c(0, 1, 2, 0, 1, 2))
+#' a <- as.numeric(c(0, 1, 1, 1, 1, 0))
+#' l <- as.numeric(rbinom(6, 1, 0.5))
+#' m <- as.numeric(rbinom(6, 1, 0.5))
+#' n <- as.numeric(rbinom(6, 1, 0.5))
+#'
+#' mydata.long <- data.frame(id, time, a, l, m, n)
+#'
+#' # Run the widen() function
+#' mydata.wide <- widen(input=mydata.long,
+#'                      id="id", time="time",
+#'                      exposure="a",
+#'                      covariate=c("l","m","n")
+#'                      )
 
 widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=NULL,weight.censor=NULL,strata=NULL,censor=NULL) {
 
@@ -168,12 +175,34 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
 #' @param name.history desired root name for time-indexed history variables e.g. "h"
 #' @param group an optional baseline variable upon which to aggregate the exposure history. This argument provides a way to adjust the metrics for a baseline covariate. For example, in the context of a trial, the grouping variable could be treatment assignment. In the context of a cohort study, this could be site e.g. "v".
 #' @export
-# @examples
-# mydata.history <- makehistory.one(input=example_sml,
-#                                   id="id",
-#                                   times=c(0,1,2),
-#                                   exposure="a",
-#                                   name.history="h")
+#' @examples
+#' # Simulate wide data set for two subjects
+#' id <- as.numeric(c(1, 2))
+#' a_0 <- as.numeric(c(0, 1))
+#' a_1 <- as.numeric(c(1, 1))
+#' a_2 <- as.numeric(c(1, 0))
+#' l_0 <- as.numeric(rbinom(2, 1, 0.5))
+#' l_1 <- as.numeric(rbinom(2, 1, 0.5))
+#' l_2 <- as.numeric(rbinom(2, 1, 0.5))
+#' m_0 <- as.numeric(rbinom(2, 1, 0.5))
+#' m_1 <- as.numeric(rbinom(2, 1, 0.5))
+#' m_2 <- as.numeric(rbinom(2, 1, 0.5))
+#' n_0 <- as.numeric(rbinom(2, 1, 0.5))
+#' n_1 <- as.numeric(rbinom(2, 1, 0.5))
+#' n_2 <- as.numeric(rbinom(2, 1, 0.5))
+#'
+#' mydata.wide <- data.frame(id, a_0, a_1, a_2,
+#'                           l_0, l_1, l_2,
+#'                           m_0, m_1, m_2,
+#'                           n_0, n_1, n_2)
+#'
+#' # Run the makehistory.one() function
+#' mydata.history <- makehistory.one(input=mydata.wide,
+#'                                  id="id",
+#'                                   times=c(0,1,2),
+#'                                   exposure="a",
+#'                                   name.history="h"
+#'                                   )
 
 makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h") {
 
@@ -270,15 +299,40 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
 #' @param name.history.b desired root name for the second time-indexed history variables e.g. "hb"
 #' @param group an optional baseline variable upon which to aggregate the exposure history. This argument provides a way to adjust the metrics for a baseline covariate. For example, in the context of a trial, the grouping variable coul be treatment assignment. In the context of a cohort study, this could be site e.g. "v".
 #' @export
-# @examples
-# mydata.history <- makehistory.two(input=mydata,
-#                                   id=id,
-#                                   times=c(0,1,2),
-#                                   exposure.a="a",
-#                                   exposure.b="z",
-#                                   name.history.a="ha",
-#                                   name.history.b="hb",
-#                                   group="v")
+#' @examples
+#' # Simulate wide data set for two subjects
+#' id <- as.numeric(c(1, 2))
+#' a_0 <- as.numeric(c(0, 1))
+#' a_1 <- as.numeric(c(1, 1))
+#' a_2 <- as.numeric(c(1, 0))
+#' z_0 <- as.numeric(c(1, 0))
+#' z_1 <- as.numeric(c(0, 0))
+#' z_2 <- as.numeric(c(0, 1))
+#' l_0 <- as.numeric(rbinom(2, 1, 0.5))
+#' l_1 <- as.numeric(rbinom(2, 1, 0.5))
+#' l_2 <- as.numeric(rbinom(2, 1, 0.5))
+#' m_0 <- as.numeric(rbinom(2, 1, 0.5))
+#' m_1 <- as.numeric(rbinom(2, 1, 0.5))
+#' m_2 <- as.numeric(rbinom(2, 1, 0.5))
+#' n_0 <- as.numeric(rbinom(2, 1, 0.5))
+#' n_1 <- as.numeric(rbinom(2, 1, 0.5))
+#' n_2 <- as.numeric(rbinom(2, 1, 0.5))
+#'
+#' mydata.wide <- data.frame(id, a_0, a_1, a_2,
+#'                           z_0, z_1, z_2,
+#'                           l_0, l_1, l_2,
+#'                           m_0, m_1, m_2,
+#'                           n_0, n_1, n_2)
+
+#' # Run the makehistory.two() function
+#' mydata.history <- makehistory.two(input=mydata.wide,
+#'                                   id="id",
+#'                                   times=c(0,1,2),
+#'                                   exposure.a="a",
+#'                                   exposure.b="z",
+#'                                   name.history.a="ha",
+#'                                   name.history.b="hb"
+#'                                  )
 
 makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.history.a="ha",name.history.b="hb",times) {
 
@@ -420,19 +474,44 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
 #' @param weight.censor the root name for censoring weights e.g. "ws"
 #' @param strata the root name for propensity-score strata e.g. "e"
 #' @export
-# @examples
-# mydata.long <- lengthen(input=example_sml,
-#                         diagnostic=3,
-#                         censoring="no",
-#                         id="id",
-#                         times.exposure=c(0,1,2),
-#                         times.covariate=c(0,1,2),
-#                         exposure="a",
-#                         temporal.covariate=c("l","m","o"),
-#                         static.covariate=c("n","p"),
-#                         history="h",
-#                         weight.exposure="wax")
-
+#' @examples
+#' # Simulate wide data set with history
+#' id <- as.numeric(c(1, 2))
+#' a_0 <- as.numeric(c(0, 1))
+#' a_1 <- as.numeric(c(1, 1))
+#' a_2 <- as.numeric(c(1, 0))
+#' l_0 <- as.numeric(rbinom(2, 1, 0.5))
+#' l_1 <- as.numeric(rbinom(2, 1, 0.5))
+#' l_2 <- as.numeric(rbinom(2, 1, 0.5))
+#' m_0 <- as.numeric(rbinom(2, 1, 0.5))
+#' m_1 <- as.numeric(rbinom(2, 1, 0.5))
+#' m_2 <- as.numeric(rbinom(2, 1, 0.5))
+#' n_0 <- as.numeric(rbinom(2, 1, 0.5))
+#' n_1 <- as.numeric(rbinom(2, 1, 0.5))
+#' n_2 <- as.numeric(rbinom(2, 1, 0.5))
+#' h_0 <- as.character(c("H", "H"))
+#' h_1 <- as.character(c("H0", "H1"))
+#' h_2 <- as.character(c("H01", "H11"))
+#'
+#' mydata.history <- data.frame(id, a_0, a_1, a_2,
+#'                              l_0, l_1, l_2,
+#'                              m_0, m_1, m_2,
+#'                              n_0, n_1, n_2,
+#'                              h_0, h_1, h_2,
+#'                              stringsAsFactors=FALSE)
+#'
+#' # Run the lengthen() function
+#' mydata.long <- lengthen(input=mydata.history,
+#'                         diagnostic=1,
+#'                         censoring="no",
+#'                         id="id",
+#'                         times.exposure=c(0,1,2),
+#'                         times.covariate=c(0,1,2),
+#'                         exposure="a",
+#'                         temporal.covariate=c("l","m"),
+#'                         static.covariate=c("n"),
+#'                         history="h"
+#'                         )
 
 lengthen <- function (input,
                       diagnostic,
@@ -641,11 +720,30 @@ step5 %>% mutate(time.exposure=as.numeric(time.exposure),time.covariate=as.numer
 #' @param distance the distance between exposure and covariate measurements e.g. 2
 #' @param times a vector of measurement times for the covariate e.g. c(1,2,3)
 #' @export
-# @examples
-# mydata.long.omit <- omit.history(input=mydata.long,
-#                                  omission="relative",
-#                                  covariate.name=c("l","m","o"),
-#                                  distance=1)
+#' @examples
+#' # Simulate the output of lengthen()
+#' id <- as.numeric(rep(c(1,1,1,2,2,2), 7))
+#' time.exposure <- as.numeric(rep(c(0,1,2), 14))
+#' a <- as.character(rep(c(0,1,1,1,1,0), 7))
+#' h <- as.character(rep(c("H","H0","H01","H","H1","H11"), 7))
+#'
+#' name.cov <- as.character(c(rep("n",6), rep("l",18), rep("m",18)))
+#'
+#' time.covariate <- as.numeric(c(rep(0,6), rep(c(rep(0,6),
+#'                                rep(1,6),rep(2,6)), 2)))
+#'
+#' value.cov <- as.numeric(c(rep(1,9), rep(0,3), rep(1,6),
+#'                           rep(0,3), rep(1,3), rep(0,12),
+#'                           rep(1,3), rep(0,3)))
+#'
+#' mydata.long <- data.frame(id, time.exposure, a, h,
+#'                           name.cov, time.covariate, value.cov)
+#'
+#' # Run the omit.history() function
+#' mydata.long.omit <- omit.history(input=mydata.long,
+#'                                  omission="relative",
+#'                                  covariate.name=c("l","m"),
+#'                                  distance=1)
 
 omit.history <- function (input,
                           omission,
@@ -951,17 +1049,32 @@ apply.scope <- function (	input,
 #' @param sd.ref "yes" or "no" depending on whether the user wishes to use the standard deviation of the reference group when calculating the SMD.
 #' @param loop a housekeeping argument the user can ignore. It is automatically set when the balance function is called by the diagnose() function described later. The default is set to "no".
 #' @export
-# @examples
-# mytable <- balance(input=mydata.long.omit,
-#                    diagnostic=3,
-#                    approach="weight",
-#                    censoring="no",
-#                    scope="all",
-#                    times.exposure=c(0,1,2),
-#                    times.covariate=c(0,1,2),
-#                    sort.order=c("l","m","n","o","p"),
-#                    exposure="a", history="h",
-#                    weight.exposure="wax")
+#' @examples
+#' # Simulate the output of lengthen() or omit.history()
+#' id <- as.numeric(rep(c(1,1,1,2,2,2), 70))
+#' time.exposure <- as.numeric(rep(c(0,1,2), 140))
+#' a <- as.character(rep(c(0,1,1,1,0,0), 70))
+#' h <- as.character(rep(c("H","H0","H01","H","H0","H01"), 70))
+#' name.cov <- as.character(c(rep("n",60), rep("l",180), rep("m",180)))
+#' time.covariate <- as.numeric(rep(c(rep(0,7), rep(1,7), rep(2,7)), 60))
+#' value.cov <- as.numeric(rnorm(420, 2, 3))
+#'
+#' mydata.long.omit <- data.frame(id, time.exposure, a, h,
+#'                                name.cov, time.covariate, value.cov)
+#'
+#'
+#' # Run the balance() function
+#' mytable <- balance(input=mydata.long.omit,
+#'                    diagnostic=1,
+#'                    approach="none",
+#'                    censoring="no",
+#'                    scope="all",
+#'                    times.exposure=c(0,1,2),
+#'                    times.covariate=c(0,1),
+#'                    sort.order=c("l","m","n"),
+#'                    exposure="a",
+#'                    history="h"
+#'                    )
 
 balance <- function (input,
                      diagnostic,
@@ -1435,31 +1548,24 @@ balance <- function (input,
 #' @param metric the metric for which the user wishes to ignore missing values as specified in the 'ignore.missing.metric' argument.
 #' @param loop "yes" to iteratively apply balance() and lengthen() or "no" to process all covariates and measurement times at once.
 #' @export
-# @examples
-# diagnose(input,
-#          diagnostic,
-#          censoring,
-#          approach,
-#          scope,
-#          id,
-#          times.exposure,
-#          times.covariate,
-#          exposure,
-#          temporal.covariate,
-#          static.covariate,
-#          sort.order,
-#          history,
-#          weight.exposure,
-#          censor,
-#          weight.censor,
-#          strata,
-#          recency,
-#          average.over,
-#          periods,
-#          list.distance,
-#          ignore.missing.metric,
-#          loop)
-
+#' @examples
+#' # This example uses the included "example_sml.rda" data set
+#'
+#' diagnose(input=example_sml,
+#'          diagnostic=1,
+#'          censoring="no",
+#'          approach="none",
+#'          scope="all",
+#'          id="id",
+#'          times.exposure=c(0,1,2),
+#'          times.covariate=c(0,1,2),
+#'          exposure="a",
+#'          temporal.covariate=c("l","m","n"),
+#'          static.covariate=c("o", "p"),
+#'          sort.order="alphabetical",
+#'          history="h",
+#'          ignore.missing.metric="no",
+#'          loop="yes")
 
 diagnose <- function (
 				input,
@@ -1800,16 +1906,30 @@ diagnose <- function (
 #' @param legend.position position of legend (default = "bottom")
 #' @param text.legend text to include in legend (optional)
 #' @export
-# @examples
-# myplot <- makeplot (input=mytable,
-#                     diagnostic=3,
-#                     approach="weight",
-#                     censoring="no",
-#                     scope="all",
-#                     metric="SMD"
-#                     )
-
-
+#' @examples
+#' # Simulate the output of balance()
+#' E <- as.numeric(rep(1,15))
+#' H <- as.character(c(rep("H",3), rep("H0",6), rep("H01",6)))
+#' name.cov <- as.character(c("l","m","n","l","l","m","m","n","n",
+#'                            "l","l","m","m","n","n"))
+#' time.exposure <- as.numeric(c(rep(0,3), rep(1,6), rep(2,6)))
+#' time.covariate <- as.numeric(c(0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1))
+#' D <- as.numeric(rnorm(15, 0.008401823, 0.1229099))
+#' SMD <- as.numeric(rnorm(15, 0.01233356, 0.2696507))
+#' N <- as.numeric(c(27,24,9,18,25,16,26,6,9,18,17,16,17,6,6))
+#' Nexp <- as.numeric(c(14,12,4,9,12,8,13,3,5,9,8,8,9,3,3))
+#'
+#' mytable <- data.frame(E, H, name.cov, time.exposure,
+#'                       time.covariate, D, SMD, N, Nexp)
+#'
+#' # Run the balance() function
+#' myplot <- makeplot (input=mytable,
+#'                     diagnostic=1,
+#'                     approach="none",
+#'                     censoring="no",
+#'                     scope="all",
+#'                     metric="SMD"
+#'                     )
 
 makeplot <- function (input,
                       diagnostic,

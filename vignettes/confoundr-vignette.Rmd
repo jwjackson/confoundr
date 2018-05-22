@@ -106,26 +106,6 @@ approach="weight",
 scope="all",
 metric="SMD"
 )
-#The following formatting arguments for makeplot() are optional (defaults shown).
-
-#label.exposure="A",							#exposure label
-#label.covariate="C",							#covariate label
-#lbound=-1,									    	#lower bound for x-axis
-#ubound=1,										  	#upper bound for x-axis
-#ratio=2,										    	#plot aspect ratio
-#text.axis.title=8,								#title font size
-#text.axis.y=6.5,									#y-axis (covariate names) font size
-#text.axis.x=6.5,									#x-axis font size	
-#text.strip.y=10,									#row panel label font size
-#text.strip.x=10,									#column panel label font size
-#point.size=.75,									#dot size
-#zeroline.size=.1,								#thickness of zero line on x-axis
-#refline.size=.1,									#thickness of reference line on x-axis
-#refline.limit.a=-.25,						#location for reference line 1 on x-axis
-#refline.limit.b=0.25,						#location for reference line 2 on x-axis
-#panel.margin.size=.75,						#space between panels
-#axis.title="Mean Difference",    #or "Standardized Mean Difference" (x-axis title)
-#label.width=15									  #width of panel label text (before wrapping text)
 
 #Display the plot
 myplot
