@@ -1247,10 +1247,7 @@ balance <- function (input,
 												                              (mean.cov_b-mean.cov_a)/sqrt((sd.cov_a^2*(n.cov_a-1)+sd.cov_b^2*(n.cov_b-1))/(n.cov_a+n.cov_b-2)))),
                                               N=n.cov_a+n.cov_b,
                                               Nexp=n.cov_b)
-      }
-
-
-        else if (sd.ref=="yes"){
+      } else if (sd.ref=="yes"){
           full.table <- temp.table %>% mutate(D=mean.cov_b-mean.cov_a,
                                               SMD=ifelse(D==0,0,
                                                          ifelse(sd.cov_b==0 | sd.cov_a==0,NA_real_,
@@ -1299,10 +1296,7 @@ balance <- function (input,
                                                             (mean.cov_b-mean.cov_a)/sqrt((sd.cov_a^2*(n.cov_a-1)+sd.cov_b^2*(n.cov_b-1))/(n.cov_a+n.cov_b-2)))),
                                           N=n.cov_a+n.cov_b,
                                           Nexp=n.cov_b)
-        }
-
-
-        else if (sd.ref=="yes"){
+        } else if (sd.ref=="yes"){
           full.table <- temp.table %>% mutate(D=mean.cov_b-mean.cov_a,
                                               SMD=ifelse(D==0,0,
                                                          ifelse(sd.cov_b==0 | sd.cov_a==0,NA_real_,
@@ -1368,9 +1362,7 @@ balance <- function (input,
                                                             (mean.cov_b-mean.cov_a)/sqrt((sd.cov_a^2*(n.cov_a-1)+sd.cov_b^2*(n.cov_b-1))/(n.cov_a+n.cov_b-2)))),
                                           N=n.cov_a+n.cov_b,
                                           Nexp=n.cov_b)
-        }
-
-        else if (sd.ref=="yes"){
+        } else if (sd.ref=="yes"){
           full.table <- temp.table %>% mutate(D=mean.cov_b-mean.cov_a,
                                               SMD=ifelse(D==0,0,
                                                          ifelse(sd.cov_b==0 | sd.cov_a==0,NA_real_,
@@ -1421,9 +1413,7 @@ balance <- function (input,
                                                             (mean.cov_b-mean.cov_a)/sqrt((sd.cov_a^2*(n.cov_a-1)+sd.cov_b^2*(n.cov_b-1))/(n.cov_a+n.cov_b-2)))),
                                           N=n.cov_a+n.cov_b,
                                           Nexp=n.cov_b)
-        }
-
-        else if (sd.ref=="yes"){
+        } else if (sd.ref=="yes"){
           full.table <- temp.table %>% mutate(D=mean.cov_b-mean.cov_a,
                                               SMD=ifelse(D==0,0,
                                                          ifelse(sd.cov_b==0 | sd.cov_a==0,NA_real_,
@@ -1473,9 +1463,7 @@ balance <- function (input,
                                                             (mean.cov_b-mean.cov_a)/sqrt((sd.cov_a^2*(n.cov_a-1)+sd.cov_b^2*(n.cov_b-1))/(n.cov_a+n.cov_b-2)))),
                                           N=n.cov_a+n.cov_b,
                                           Nexp=n.cov_b)
-        }
-
-        else if (sd.ref=="yes"){
+        } else if (sd.ref=="yes"){
           full.table <- temp.table %>% mutate(D=mean.cov_b-mean.cov_a,
                                               SMD=ifelse(D==0,0,
                                                          ifelse(sd.cov_b==0 | sd.cov_a==0,NA_real_,
