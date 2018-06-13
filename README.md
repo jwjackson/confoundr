@@ -1,6 +1,6 @@
 # confoundr
 
-#INTRODUCTION
+INTRODUCTION
 
 This software implements three [diagnostics for confounding/selection-bias](https://www.ncbi.nlm.nih.gov/pubmed/27479649) that can be used in sequence. Built upon the framework of sequential exchangeability, these apply to any study of multivariate exposures e.g. time-varying exposures, direct effects, interaction, and censoring. The first two diagnostics pertain to the nature of confounding/selection-bias in the data, while the third is meant to examine residual confounding/selection-bias after applying certai adjustment methods. These tools are meant to help describe confounding/selection-bias in complex data _after_ investigators have selected covariates to adjust for (e.g., through subject-matter knowledge).
 
@@ -10,7 +10,7 @@ This software implements three [diagnostics for confounding/selection-bias](http
 
 + *Diagnostic 3* is meant to be applied after investigators have applied the earlier diagnostics and have chosen to use g-methods to adjust for confounding/selection-bias. The form of Diagnostic 3 is similar to that of Diagnostic 1 in that it is a generalized "Table 1" for weighted or stratified data. It can be applied to examine residual confounding/selection-bias when [inverse probability weights](https://www.ncbi.nlm.nih.gov/pubmed/10955408) are used to fit Marginal Structural Models. It can also be applied to examine residual confounding/selection-bias when [propensity-score stratification](https://www.ncbi.nlm.nih.gov/pubmed/19817741) is used to implement the [parametric g-formula](https://www.ncbi.nlm.nih.gov/pubmed/19817741) or [marginal mean weighting through stratification](https://www.ncbi.nlm.nih.gov/pubmed/21843003).
 
-#CAPABILITIES
+CAPABILITIES
 
 The tools can accomodate:
 * Multivariate exposures that are binary or categorical (and continuous, when used in concert with modeling, see below). 
@@ -19,7 +19,7 @@ The tools can accomodate:
 * Artificial censoring rules.
 * Requests for tables/plots at all times, specific times, or averages over selected dimensions of person-time.
 * Data that are not time-indexed.
-* Data that are supplied in >"wide" or >"long format" (e.g., from the `twang` and `CBPS` packages).
+* Data that are supplied in "wide" or "long format" (e.g., from the `twang` and `CBPS` packages).
 
 To install the package, use the following code:
 
