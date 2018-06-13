@@ -1,70 +1,32 @@
 ########################################################################################################
-#R code for diagnose, balance, lengthen, makeplot, omit.history, makehistory.one, makehistory.two,
-#and apply.scope  functions
+#R code for widen, makehistory.one, make.historytwo,
+#           lengthen, omit.history, balance, makeplot,
+#           diagnose, and apply.scope functions
 #
 #These functions can be used to implement the diagnostic framework outlined in:
 #Jackson JW. Diagnostics for confounding of time-varying and other joint effects. Epidemiology. 2016.
 #
 #© John W. Jackson 2015
-#THE STANDARD MIT LICENSE APPLIES:
-#Permission is hereby granted, free of charge, to any person obtaining a copy of this software
-#and associated documentation files (the "Software"), to deal in the Software without restriction,
-#including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
-#and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
-#subject to the following conditions:
+## LICENSE: GPL-3
+#######################################################################################################
 
-#The above copyright notice and this permission notice shall be included in all copies or substantial
-#portions of the Software.
-
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
-#LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A #PARTICULAR PURPOSE AND NONINFRINGEMENT.
-#IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-#WHETHER IN AN ACTION #OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-#SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-########################################################################################################
-
-##########################
-##LOAD REQUIRED PACKAGES##
-##########################
+######################################
+##ATTACH REQUIRED PACKAGES/FUNCTIONS##
+######################################
 
 #' @import grid
 #' @import gridExtra
 #' @import scales
 #' @import Rmpfr
-#' @import broom
 #' @import ggplot2
 #' @importFrom magrittr %>%
-#' @importFrom tidyr gather gather_ separate separate_ unite unite_ spread
-#' @importFrom dplyr mutate select select_ filter arrange arrange_ summarise group_by group_by_ ungroup first last between bind_rows rename_ left_join desc
-#' @importFrom stats D lag na.omit sd var weighted.mean
+#' @importFrom tidyr gather separate unite spread
+#' @importFrom dplyr mutate mutate_at select select_if filter arrange summarise group_by ungroup first last lag between bind_rows left_join desc n_distinct rename left_join bind_rows desc if_else
+#' @importFrom rlang .data !! := sym
+#' @importFrom stringr str_c
+#' @importFrom purrr accumulate
+#' @importFrom stats na.omit sd var weighted.mean D
 NULL
-
-## quiets concerns of R CMD check regarding macro variables that appear in pipelines
-if(getRversion() >= "2.15.1")  utils::globalVariables(c(".", "E", "GROUP", "H", "N", "Nexp",
-                                                        "S", "SMD", "W", "W_a", "W_s",
-                                                        "comparison", "covariate", "distance",
-                                                        "exp.time", "exp.value", "exp.value.a",
-                                                        "exp.value.b", "exposure",
-                                                        "his.name.time", "his.name.time.a",
-                                                        "his.name.time.b", "his.time",
-                                                        "his.time.a", "his.time.b", "his.value",
-                                                        "his.value.a", "his.value.b",
-                                                        "mean.cov_a", "mean.cov_b",
-                                                        "n.cov_a", "n.cov_b", "n_distinct",
-                                                        "name.cov", "period.end", "period.id",
-                                                        "period.start", "plot.metric",
-                                                        "sd.cov_a", "sd.cov_b",
-                                                        "time.covariate", "time.exposure",
-                                                        "val", "value.cov", "wide.name.cov",
-                                                        "wide.name.exp", "input", "diagnostic",
-                                                        "approach", "scope", "average.over",
-                                                        "periods", "list.distance", "recency",
-                                                        "sort.order", "metric",
-                                                        "ignore.missing.metric"
-                                                        ))
-
-
-
 
 ####################
 ##WIDEN() FUNCTION##
@@ -82,6 +44,8 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(c(".", "E", "GROUP", "H", 
 #' @param strata propensity score strata at time t
 #' @param censor censoring indicators at time t
 #' @export
+#' @details
+#' Numeric formats are preserved, factors are coerced into character.
 #' @examples
 #' # Simulate long data set for two subjects
 #' id <- as.numeric(c(1, 1, 1, 2, 2, 2))
@@ -101,6 +65,8 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(c(".", "E", "GROUP", "H", 
 #'                      )
 
 widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=NULL,weight.censor=NULL,strata=NULL,censor=NULL) {
+
+  input <- ungroup(input)
 
   if (is.null(input)) {
     stop("ERROR: 'input' is missing or misspecified. Please specify a dataframe in 'long' i.e. person-time format")
@@ -139,12 +105,16 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
     stop("ERROR: The strata root name is misspelled.")
   }
 
-  input <- input %>%
-    rename_(id=id,time=time) %>%
-    mutate(id.time=paste(id,time)
-    )
+  #rename key vars
+  s_id   <- sym(id)
+  s_time <- sym(time)
 
-  if (!all(!input$id.time %in% input$id[duplicated(input$id.time)])) {
+  input <- input %>%
+    rename(ID = !! s_id,
+           TIME = !! s_time) %>%
+    mutate(ID.TIME=paste(.data$ID,.data$TIME,sep=""))
+
+  if (!all(!input$ID.TIME %in% input$ID[duplicated(input$ID.TIME)])) {
     stop("ERROR: id and time do not uniquely identify each observation (i.e. each row). Please specify an identifier and time variable that uniquely identify observations")
   }
 
@@ -154,11 +124,92 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
     stop("Please ensure that variable names do not contain an underscore i.e. '_' ")
   }
 
-  output <- input %>%
-    select(id,time,variables) %>%
-    gather(key="var",value="val",variables) %>%
-    unite(col="var_time",var,time,sep="_") %>%
-    spread(key="var_time",value=val)
+  #break apart by type & rename key vars
+  input.num.l <- input %>%
+    select(-c(.data$ID.TIME)) %>%
+    group_by(.data$ID) %>%
+    select(.data$ID,.data$TIME,variables) %>%
+    mutate(TIME=as.numeric(.data$TIME)) %>%
+    select_if(is.numeric) %>%
+    ungroup()
+
+  TimeLevels <- sort(unique(input.num.l$TIME))
+
+  input.fac.l <- input %>%
+    select(-c(.data$ID.TIME)) %>%
+    group_by(.data$ID) %>%
+    select(.data$TIME,variables) %>%
+    mutate(TIME=factor(.data$TIME,levels=TimeLevels)) %>%
+    select_if(is.factor) %>%
+    ungroup()
+
+  input.char.l <- input %>%
+    select(-c(.data$ID.TIME)) %>%
+    group_by(.data$ID) %>%
+    select(.data$ID,.data$TIME,variables) %>%
+    mutate(TIME=as.character(.data$TIME)) %>%
+    select_if(is.character) %>%
+    ungroup()
+
+
+
+  #process separately
+  if (ncol(input.num.l)>2) {
+    input.num.w <- input.num.l %>%
+      gather(key="var",value="val",-c(.data$ID,.data$TIME)) %>%
+      unite(col="var_time",var,.data$TIME,sep="_") %>%
+      spread(key="var_time",value=.data$val) %>%
+      arrange(.data$ID)
+  } else {
+    input.num.w <- NULL
+  }
+
+  if (ncol(input.fac.l)>2) {
+    input.fac.w <- input.fac.l %>%
+      gather(key="var",value="val",-c(.data$ID,.data$TIME)) %>%
+      unite(col="var_time",var,.data$TIME,sep="_") %>%
+      spread(key="var_time",value=.data$val) %>%
+      arrange(.data$ID)
+  } else {
+    input.fac.w <- NULL
+  }
+
+  if (ncol(input.char.l)>2) {
+    input.char.w <- input.char.l %>%
+      gather(key="var",value="val",-c(.data$ID,.data$TIME)) %>%
+      unite(col="var_time",var,.data$TIME,sep="_") %>%
+      spread(key="var_time",value=.data$val) %>%
+      arrange(.data$ID)
+  } else {
+    input.char.w <- NULL
+  }
+
+
+
+  #combine
+         if (!is.null(input.num.w) & !is.null(input.fac.w) & !is.null(input.char.w)) {
+    output <- input.num.w %>% left_join(input.fac.w,by=c("ID")) %>% left_join(input.char.w,by=c("ID"))
+  } else if (!is.null(input.num.w) & !is.null(input.fac.w) & is.null(input.char.w)) {
+    output <- input.num.w %>% left_join(input.fac.w,by=c("ID"))
+  } else if (!is.null(input.num.w) & is.null(input.fac.w) & !is.null(input.char.w)) {
+    output <- input.num.w  %>% left_join(input.char.w,by=c("ID"))
+  } else if (!is.null(input.num.w) & is.null(input.fac.w) & is.null(input.char.w)) {
+    output <- input.num.w
+  } else if (is.null(input.num.w) & !is.null(input.fac.w) & !is.null(input.char.w)) {
+    output <- input.fac.w %>% left_join(input.char.w,by=c("ID"))
+  } else if (is.null(input.num.w) & !is.null(input.fac.w) & is.null(input.char.w)) {
+    output <- input.fac.w %>% left_join(input.char.w,by=c("ID"))
+  } else if (is.null(input.num.w) & is.null(input.fac.w) & !is.null(input.char.w)) {
+    output <- input.char.w
+  } else if (is.null(input.num.w) & is.null(input.fac.w) & is.null(input.char.w)) {
+    output <- NULL
+  }
+
+  output <- output %>%
+    rename(!! s_id := .data$ID) %>%
+    data.frame()
+
+  return(output)
 
 }
 
@@ -206,6 +257,8 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
 
 makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h") {
 
+  input <- ungroup(input)
+
   list.exposure <- paste(exposure,times,sep="_")
 
   if (is.null(id)) {
@@ -230,59 +283,107 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
     stop("ERROR: The exposure root name is misspelled, or some exposure measurements are missing from the input dataframe, or incorrect measurement times have been specified")
   }
 
-  if (!all(!input$id %in% input$id[duplicated(input$id)])) {
+  if (!is.character(exposure)) {
+    stop("ERROR: exposure must be specified as a string")
+  }
+
+  if (!is.null(group) && !is.character(group)) {
+    stop("ERROR: group must be specified as a string")
+  }
+
+  if (!is.null(name.history) && !is.character(name.history)) {
+    stop("ERROR: name.history must be specified as a string")
+  }
+
+  #rename key vars
+  s_id   <- sym(id)
+
+  input <- input %>%
+    rename(ID = !! s_id)
+
+  if (!all(!input$ID %in% input$ID[duplicated(input$ID)])) {
     stop("ERROR: id does not uniquely identify each observation (i.e. each row). Please specify a unique identifier.")
   }
 
-  cumpaste = function(x,.sep="") {
+  #ALTERNATIVES TO DPLYR'S ACCUMULATE
+  CumPaste = function(x,.sep="") {
     Reduce(function(x1, x2) paste(x1,x2,sep=.sep),x,accumulate=TRUE)
   }
 
+#  cumpaste = function(x, .sep = "")
+#  {
+#    concat = paste(x, collapse = .sep)
+#    substring(concat, 1L, cumsum(c(nchar(x[[1L]]), nchar(x[-1L]) + nchar(.sep))))
+#  }
+
   if (is.null(group)) {
 
-    input.temp <- input %>% ungroup() %>% select_(.dots=c(id,list.exposure)) %>%
-      gather_(key_col="exp.name.time",value_col="exp.value",gather_cols=list.exposure) %>%
-      separate_(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
-      mutate(exp.time=as.numeric(exp.time)) %>%
-      arrange_(id,"exp.time") %>%
-      group_by_(id) %>%
-      mutate(his.name=name.history,
-             his.time=exp.time,
-             his.value=ifelse(his.time==first(his.time),
-                            "H",
-                            paste("H",lag(cumpaste(exp.value)),sep=""))
+    input.temp <- input %>%
+      ungroup() %>%
+      select(.data$ID,list.exposure) %>%
+      gather(key="exp.name.time",value="exp.value",list.exposure) %>%
+      separate(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
+      mutate(exp.time=as.numeric(.data$exp.time),
+             exp.value=if_else(is.na(.data$exp.value),
+                                    "NA",
+                                    as.character(.data$exp.value))
              ) %>%
-      select_(.dots=c(id,"his.name","his.time","his.value")) %>%
-      unite_(col="his.name.time",from=c("his.name","his.time"),sep="_") %>%
-      spread(his.name.time,his.value)
+      group_by(.data$ID) %>%
+      arrange(.data$ID,.data$exp.time) %>%
+      mutate(his.name=name.history,
+             his.time=.data$exp.time,
+             his.lag=if_else(.data$exp.time==first(.data$his.time,default="NA"),
+                              "H",
+                              lag(.data$exp.value)),
+             his.value=CumPaste(.data$his.lag)) %>% #use CumPaste
+#             his.value=accumulate(.data$his.lag,paste,sep="")) %>% #use accumulate instead (slower)
+      select(.data$ID,c("his.name","his.time","his.value")) %>%
+      unite(col="his.name.time",from=c("his.name","his.time"),sep="_") %>%
+      spread(.data$his.name.time,.data$his.value)
 
-      output <- left_join(input,input.temp,by=id)
-	    output <- data.frame(output)
+      output <- input %>%
+        left_join(input.temp,by="ID") %>%
+        rename(!! s_id := .data$ID) %>%
+	      data.frame()
 
-	    output
+	    return(output)
 
   } else if (!is.null(group)) {
 
-    input.temp <- input %>% ungroup() %>% select_(.dots=c(id,group,list.exposure)) %>% rename_("GROUP"=group) %>%
-      gather_(key_col="exp.name.time",value_col="exp.value",gather_cols=list.exposure) %>%
-      separate_(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
-      mutate(exp.time=as.numeric(exp.time)) %>%
-      arrange_(id,"exp.time") %>%
-      group_by_(id) %>%
+    s_group <- sym(group)
+
+    input.temp <- input %>%
+      ungroup() %>%
+      select(.data$ID,list.exposure,!! s_group) %>%
+      rename(GROUP= !! s_group) %>%
+      gather(key="exp.name.time",value="exp.value",list.exposure,-.data$GROUP) %>%
+      separate(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
+      mutate(exp.time=as.numeric(.data$exp.time),
+             exp.value=ifelse(is.na(.data$exp.value),
+                                    "NA",
+                                    as.character(.data$exp.value))
+             ) %>%
+      group_by(.data$ID) %>%
+      arrange(.data$ID,.data$exp.time) %>%
       mutate(his.name=name.history,
-             his.time=exp.time,
-             his.value=ifelse(his.time==first(his.time),
-                              paste(GROUP,"H",sep=""),
-                              paste(GROUP,"H",lag(cumpaste(exp.value)),sep=""))
-      ) %>%
-      select_(.dots=c(id,"his.name","his.time","his.value")) %>%
-      unite_(col="his.name.time",from=c("his.name","his.time"),sep="_") %>%
-      spread(his.name.time,his.value)
+             his.time=.data$exp.time,
+             his.lag=if_else(.data$his.time==first(.data$his.time,default="NA"),
+                            "H",
+                            lag(.data$exp.value)),
+             his.temp=CumPaste(.data$his.lag), #use CumPaste
+#             his.temp=accumulate(.data$his.lag,paste,sep=""), #use accumulate instead (slower)
+             his.value=str_c(.data$GROUP,.data$his.temp)
+             ) %>%
+      select(.data$ID,c("his.name","his.time","his.value")) %>%
+      unite(col="his.name.time",from=c("his.name","his.time"),sep="_") %>%
+      spread(.data$his.name.time,.data$his.value)
 
-      output <- left_join(input,input.temp,by=id)
-	    output <- data.frame(output)
+      output <- input %>%
+        left_join(input.temp,by="ID") %>%
+        rename(!! s_id := .data$ID) %>%
+        data.frame()
 
-	  output
+	  return(output)
 
   }
 
@@ -299,6 +400,8 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
 #' @param name.history.b desired root name for the second time-indexed history variables e.g. "hb"
 #' @param group an optional baseline variable upon which to aggregate the exposure history. This argument provides a way to adjust the metrics for a baseline covariate. For example, in the context of a trial, the grouping variable coul be treatment assignment. In the context of a cohort study, this could be site e.g. "v".
 #' @export
+#' @details
+#'When the exposure is multivariate, the idea is to diagnose each exposure separately (see eAppendix of Jackson 2016). From the perspective of using the R-functions, the only difference is to use exposure history based on all exposures that comprise the multivariate exposure. It is important that such joint exposure history accurately reflect the ordering of each component exposure. The function makehistory.two() creates an appropriate joint exposure history for each of two exposures, assuming that exposures in its argument list.exposure.a (e.g. A) precede those in list.exposure.b (e.g. Z) at any given index as described in the eAppendix of Jackson 2016. In that example, exposure A(t) always precedes exposure Z(t) such that the joint history of A(2) is A(1),A(0),Z(0) while the joint history of Z(2) is A(1),A(0),Z(1),Z(0). If one exposure does not precede the other, investigators will still need to use an appropriate joint exposure history and can specify either order as desired. Note that the exposure history produced by the function makehistory.two()will be inappropriate if the relative ordering of A(t) and Z(t) varies over time.
 #' @examples
 #' # Simulate wide data set for two subjects
 #' id <- as.numeric(c(1, 2))
@@ -336,6 +439,8 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
 
 makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.history.a="ha",name.history.b="hb",times) {
 
+  input <- ungroup(input)
+
   list.exposure.a <- paste(exposure.a,times,sep="_")
   list.exposure.b <- paste(exposure.b,times,sep="_")
   list.exposure <- c(list.exposure.a,list.exposure.b)
@@ -361,94 +466,160 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
   }
 
   if (any(!list.exposure.a %in% names(input))) {
-    stop("ERROR: The exposure root name is misspelled, or some exposure measurements are missing from the input dataframe, or incorrect measurement times have been specified")
+    stop("ERROR: The exposure.a root name is misspelled, or some exposure measurements are missing from the input dataframe, or incorrect measurement times have been specified")
   }
 
   if (any(!list.exposure.b %in% names(input))) {
-    stop("ERROR: The exposure root name is misspelled, or some exposure measurements are missing from the input dataframe, or incorrect measurement times have been specified")
+    stop("ERROR: The exposure root.b name is misspelled, or some exposure measurements are missing from the input dataframe, or incorrect measurement times have been specified")
   }
 
-  if (!all(!input$id %in% input$id[duplicated(input$id)])) {
+  #rename key vars
+  s_id   <- sym(id)
+
+  input <- input %>%
+    rename(ID = !! s_id)
+
+  if (!all(!input$ID %in% input$ID[duplicated(input$ID)])) {
     stop("ERROR: id does not uniquely identify each observation (i.e. each row). Please specify a unique identifier.")
   }
 
-  cumpaste = function(x,.sep="") {
+  if (!is.character(exposure.a)) {
+    stop("ERROR: exposure.a must be specified as a string")
+  }
+
+  if (!is.character(exposure.b)) {
+    stop("ERROR: exposure.b must be specified as a string")
+  }
+
+  if (!is.null(group) && !is.character(group)) {
+    stop("ERROR: group must be specified as a string")
+  }
+
+  if (!is.null(name.history.a) && !is.character(name.history.a)) {
+    stop("ERROR: name.history.a must be specified as a string")
+  }
+
+  if (!is.null(name.history.b) && !is.character(name.history.b)) {
+    stop("ERROR: name.history.b must be specified as a string")
+  }
+
+# ALTERNATIVES TO DPLYR'S ACCUMULATE
+  CumPaste = function(x,.sep="") {
     Reduce(function(x1, x2) paste(x1,x2,sep=.sep),x,accumulate=TRUE)
   }
 
+#  CumPaste = function(x, .sep = "")
+#  {
+#    concat = paste(x, collapse = .sep)
+#    substring(concat, 1L, cumsum(c(nchar(x[[1L]]), nchar(x[-1L]) + nchar(.sep))))
+#  }
+
   if (is.null(group)) {
 
-    input.temp <- input %>% ungroup() %>% select_(.dots=c(id,list.exposure)) %>%
-      gather_(key_col="exp.name.time",value_col="exp.value",gather_cols=c(list.exposure)) %>%
-      separate_(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
+    input.temp <- input %>%
+      ungroup() %>%
+      select(.data$ID,list.exposure.a,list.exposure.b) %>%
+      gather(key="exp.name.time",value="exp.value",list.exposure.a,list.exposure.b) %>%
+      separate(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
       spread(key="exp.name",value="exp.value") %>%
-      mutate(exp.time=as.numeric(exp.time)) %>%
-      rename_("exp.value.a"=exposure.a,"exp.value.b"=exposure.b) %>%
-      arrange_(id,"exp.time") %>%
-      group_by_(id) %>%
+      mutate(exp.time=as.numeric(.data$exp.time)) %>%
+      rename(exp.value.a=exposure.a,
+             exp.value.b=exposure.b) %>%
+      mutate(exp.value.a=if_else(is.na(.data$exp.value.a),
+                        "NA",
+                        as.character(.data$exp.value.a)),
+             exp.value.b=if_else(is.na(.data$exp.value.b),
+                                 "NA",
+                                 as.character(.data$exp.value.b))
+             ) %>%
+      group_by(.data$ID) %>%
+      arrange(.data$ID,.data$exp.time) %>%
       mutate(his.name.a=name.history.a,
              his.name.b=name.history.b,
-             his.time.a=exp.time,
-             his.time.b=exp.time,
-             exp.value=paste(exp.value.a,exp.value.b,sep=""),
-             his.value.a=ifelse(his.time.a==first(his.time.a),
-                                "H",
-                                paste("H",lag(cumpaste(exp.value)),sep="")),
-             his.value.b=ifelse(his.time.b==first(his.time.b),
-                                paste("H",exp.value.a,sep=""),
-                                paste(his.value.a,exp.value.a,sep="")))
+             his.time.a=.data$exp.time,
+             his.time.b=.data$exp.time,
+             his.lag=if_else(.data$exp.time==first(.data$exp.time,default="NA"),
+                              "H",
+                              lag(paste(.data$exp.value.a,.data$exp.value.b,sep=""))),
+             his.value.a=CumPaste(.data$his.lag), #use CumPaste
+             his.value.b=paste(CumPaste(.data$his.lag),.data$exp.value.a,sep="") #use CumPaste
+#             his.value.a=accumulate(.data$his.lag,paste,sep=""), #use accumulate instead (slower)
+#             his.value.b=paste(accumulate(.data$his.lag,paste,sep=""),.data$exp.value.a,sep="") #use accumulate instead (slower)
+             )
 
-    input.temp.a <- input.temp %>% select_(.dots=c(id,"his.name.a","his.time.a","his.value.a")) %>%
-      unite_(col="his.name.time.a",from=c("his.name.a","his.time.a"),sep="_") %>%
-      spread(his.name.time.a,his.value.a)
+    input.temp.a <- input.temp %>%
+      select(.data$ID,c("his.name.a","his.time.a","his.value.a")) %>%
+      unite(col="his.name.time.a",from=c("his.name.a","his.time.a"),sep="_") %>%
+      spread(.data$his.name.time.a,.data$his.value.a)
 
-    input.temp.b <- input.temp %>% select_(.dots=c(id,"his.name.b","his.time.b","his.value.b")) %>%
-      unite_(col="his.name.time.b",from=c("his.name.b","his.time.b"),sep="_") %>%
-      spread(his.name.time.b,his.value.b)
+    input.temp.b <- input.temp %>%
+      select(.data$ID,c("his.name.b","his.time.b","his.value.b")) %>%
+      unite(col="his.name.time.b",from=c("his.name.b","his.time.b"),sep="_") %>%
+      spread(.data$his.name.time.b,.data$his.value.b)
 
-    output <- left_join(input ,input.temp.a,by=id)
-    output <- left_join(output,input.temp.b,by=id)
-    output <- data.frame(output)
-
-    output
+    output <- input %>%
+      left_join(input.temp.a,by="ID") %>%
+      left_join(input.temp.b,by="ID") %>%
+      rename(!! s_id := .data$ID) %>%
+      data.frame()
 
   } else if (!is.null(group)) {
 
-    input.temp <- input %>% ungroup() %>% select_(.dots=c(id,list.exposure,group))  %>% rename_("GROUP"=group) %>%
-      gather_(key_col="exp.name.time",value_col="exp.value",gather_cols=c(list.exposure)) %>%
-      separate_(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
+    s_group <- sym(group)
+
+    input.temp <- input %>%
+      ungroup() %>%
+      select(.data$ID,list.exposure, !! s_group) %>%
+      rename(GROUP= !! s_group) %>%
+      gather(key="exp.name.time",value="exp.value",list.exposure.a,list.exposure.b,-.data$GROUP) %>%
+      separate(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
       spread(key="exp.name",value="exp.value") %>%
-      mutate(exp.time=as.numeric(exp.time)) %>%
-      rename_("exp.value.a"=exposure.a,"exp.value.b"=exposure.b) %>%
-      arrange_(id,"exp.time") %>%
-      group_by_(id) %>%
+      mutate(exp.time=as.numeric(.data$exp.time)) %>%
+      rename(exp.value.a=exposure.a,
+             exp.value.b=exposure.b) %>%
+      mutate(exp.value.a=if_else(is.na(.data$exp.value.a),
+                                 "NA",
+                                 as.character(.data$exp.value.a)),
+             exp.value.b=if_else(is.na(.data$exp.value.b),
+                                 "NA",
+                                 as.character(.data$exp.value.b))
+             ) %>%
+      group_by(.data$ID) %>%
+      arrange(.data$ID,.data$exp.time) %>%
       mutate(his.name.a=name.history.a,
              his.name.b=name.history.b,
-             his.time.a=exp.time,
-             his.time.b=exp.time,
-             exp.value=paste(exp.value.a,exp.value.b,sep=""),
-             his.value.a=ifelse(his.time.a==first(his.time.a),
-                                paste(GROUP,"H",sep=""),
-                                paste(GROUP,"H",lag(cumpaste(exp.value)),sep="")),
-             his.value.b=ifelse(his.time.b==first(his.time.b),
-                                paste(GROUP,"H",exp.value.a,sep=""),
-                                paste(his.value.a,exp.value.a,sep="")))
+             his.time.a=.data$exp.time,
+             his.time.b=.data$exp.time,
+             his.lag=if_else(.data$exp.time==first(.data$exp.time,default="NA"),
+                             "H",
+                             lag(paste(.data$exp.value.a,.data$exp.value.b,sep=""))),
+             his.temp.a=CumPaste(.data$his.lag), #use CumPaste
+             his.temp.b=paste(CumPaste(.data$his.lag),.data$exp.value.a,sep=""), #use CumPaste
+#             his.temp.a=accumulate(.data$his.lag,paste,sep=""), #use accumulate instead (slower)
+#             his.temp.b=paste(accumulate(.data$his.lag,paste,sep=""),.data$exp.value.a,sep=""), #use accumulate instead (slower)
+             his.value.a=str_c(.data$GROUP,.data$his.temp.a),
+             his.value.b=str_c(.data$GROUP,.data$his.temp.b)
+      )
 
-    input.temp.a <- input.temp %>% select_(.dots=c(id,"his.name.a","his.time.a","his.value.a")) %>%
-      unite_(col="his.name.time.a",from=c("his.name.a","his.time.a"),sep="_") %>%
-      spread(his.name.time.a,his.value.a)
+    input.temp.a <- input.temp %>%
+      select(.data$ID,c("his.name.a","his.time.a","his.value.a")) %>%
+      unite(col="his.name.time.a",from=c("his.name.a","his.time.a"),sep="_") %>%
+      spread(.data$his.name.time.a,.data$his.value.a)
 
-    input.temp.b <- input.temp %>% select_(.dots=c(id,"his.name.b","his.time.b","his.value.b")) %>%
-      unite_(col="his.name.time.b",from=c("his.name.b","his.time.b"),sep="_") %>%
-      spread(his.name.time.b,his.value.b)
+    input.temp.b <- input.temp %>%
+      select(.data$ID,c("his.name.b","his.time.b","his.value.b")) %>%
+      unite(col="his.name.time.b",from=c("his.name.b","his.time.b"),sep="_") %>%
+      spread(.data$his.name.time.b,.data$his.value.b)
 
-    output <- left_join(input ,input.temp.a,by=id)
-    output <- left_join(output,input.temp.b,by=id)
-    output <- data.frame(output)
-
-    output
+    output <- input %>%
+      left_join(input.temp.a,by="ID") %>%
+      left_join(input.temp.b,by="ID") %>%
+      rename(!! s_id := .data$ID) %>%
+      data.frame()
 
   }
+
+  return(output)
 
 }
 
@@ -474,6 +645,7 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
 #' @param weight.censor the root name for censoring weights e.g. "ws"
 #' @param strata the root name for propensity-score strata e.g. "e"
 #' @export
+#' @details The input dataset should have one record per observation (wide format) with the timing of variables indexed by an underscore followed by the time index (underscores should NOT appear anywhere else in the variable name). Any indexing scheme can be used (e.g. "var_1","var_4","var_9"), but it may be easiest to assign zero as the baseline index and increase it by one the unit for each subsequent measurement (e.g. "var_0","var_1","var_2"). You can use widen() to transform a person-time dataset into this format. The common referent value—to which all other exposure levels are compared—should be coded as the lowest value. Data with artificial censoring rules should contain a vector of time-indexed censoring indicators (1=censored, 0 otherwise).
 #' @examples
 #' # Simulate wide data set with history
 #' id <- as.numeric(c(1, 2))
@@ -528,15 +700,26 @@ lengthen <- function (input,
                       weight.censor=NULL,
                       strata=NULL) {
 
+
+  input <- ungroup(input)
+
   if(is.null(input)) {
     stop ("ERROR: 'input' is missing or misspecified. Please specify a dataframe in 'wide' format")
   }
   if(is.null(id)) {
     stop ("ERROR: 'id' is missing or misspecified. Please specify a unique identifier for each observation")
   }
-  if (!all(!input$id %in% input$id[duplicated(input$id)])) {
+
+  #rename key vars
+  s_id   <- sym(id)
+
+  input <- input %>%
+    rename(ID = !! s_id)
+
+  if (!all(!input$ID %in% input$ID[duplicated(input$ID)])) {
     stop("ERROR: id does not uniquely identify each observation (i.e. each row). Please specify a unique identifier.")
   }
+
   if(is.null(diagnostic) | !diagnostic %in% c(1,2,3)) {
     stop ("ERROR: 'diagnostic' is missing or misspecified. Please specify as 1, 2 or 3")
   }
@@ -557,11 +740,13 @@ lengthen <- function (input,
     stop ("ERROR: 'censor' is missing. Please specify a root name for censoring indicators")
   }
 
-  if (diagnostic==1) {
-    if (is.null(history)) stop ("ERROR: 'history' is missing. Please specify a root name for exposure history")
-  }  else if ((diagnostic==2 | diagnostic==3) & ((is.null(history) | is.null(weight.exposure)) & is.null(strata))) {
-    stop ("ERROR: Please specify the root names for exposure history and exposure weight variables, or the root name for strata variables")
-  }
+  if (diagnostic==1 & is.null(history)) {
+    stop("ERROR: For diagnostic 1, please specify the root names for exposure history")
+    } else if (diagnostic==2 & (is.null(history) | is.null(weight.exposure)) & is.null(strata)) {
+    warning("WARNING: For diagnostic 2, unless exposure is randomized, specify the root names for (i) exposure history and exposure weights or (ii) strata")
+      } else if (diagnostic==3 & (is.null(history) | is.null(weight.exposure)) && (is.null(history) | is.null(strata))) {
+        stop("ERROR: For diagnostic 3, please specify the root names for (i) exposure history and exposure weights or (ii) exposure history and strata")
+        }
 
   list.exposure  <- paste(exposure,times.exposure,sep="_")
 
@@ -577,20 +762,14 @@ if (!is.null(weight.exposure))  {
 
 if (!is.null(censor) & diagnostic!=2)  {
   list.censor   <- paste(censor,times.exposure,sep="_")
+} else if (!is.null(censor) & diagnostic==2)  {
+    list.censor   <- paste(censor,times.covariate,sep="_")
 } else {list.censor <- NULL
 }
 
 if (!is.null(weight.censor) & diagnostic!=2)  {
   list.weight.censor   <- paste(weight.censor,times.exposure,sep="_")
-} else {list.weight.censor <- NULL
-}
-
-if (!is.null(censor) & diagnostic==2)  {
-  list.censor   <- paste(censor,times.covariate,sep="_")
-} else {list.censor <- NULL
-}
-
-if (!is.null(weight.censor) & diagnostic==2)  {
+} else if (!is.null(weight.censor) & diagnostic==2)  {
   list.weight.censor   <- paste(weight.censor,times.covariate,sep="_")
 } else {list.weight.censor <- NULL
 }
@@ -630,8 +809,8 @@ if (!is.null(weight.exposure) & any(!list.weight.exposure %in% names(input))) {
   covariate.unique <- c(static.covariate,temporal.covariate)
 
   #issue a warning if delimiter is contained in root names
-  if (any(grepl("_",covariate.unique))) {
-  stop("Please ensure that covariate root names do not contain an underscore i.e. '_' ")
+  if (any(grepl("_",c(exposure,history,censor,weight.exposure,weight.censor,strata,covariate.unique)))) {
+  stop("Please ensure that root names (e.g., of covariates) do not contain an underscore i.e. '_' ")
   }
 
   if (is.null(static.covariate)) {
@@ -672,39 +851,104 @@ if (!is.null(weight.exposure) & any(!list.weight.exposure %in% names(input))) {
     stop("ERROR: At least one exposure or covariate is not formatted properly. Please ensure that these variables are in numeric format.")
   }
 
-step1 <- input[,c(id,list.exposure,list.covariate,list.history,list.weight.exposure,list.weight.censor,list.strata,list.censor)]
+step1 <- input[,c("ID",list.exposure,list.covariate,list.history,list.weight.exposure,list.weight.censor,list.strata,list.censor)]
 
 if (censoring=="no" | (censoring=="yes" & diagnostic!=2)) {
-  step2 <- step1 %>% gather_(key_col="wide.name.exp",value_col="value.exp",c(list.exposure,list.history,list.weight.exposure,list.weight.censor,list.censor,list.strata))
+  step2 <- step1 %>% gather(key="wide.name.exp",value="value.exp",c(list.exposure,list.history,list.weight.exposure,list.weight.censor,list.censor,list.strata))
 } else if (censoring=="yes" & diagnostic==2) {
-  step2 <- step1 %>% gather_(key_col="wide.name.exp",value_col="value.exp",c(list.exposure,list.history,list.weight.exposure,list.censor,list.strata))
+  step2 <- step1 %>% gather(key="wide.name.exp",value="value.exp",c(list.exposure,list.history,list.weight.exposure,list.strata))
 }
 
-step3 <- step2 %>% separate(wide.name.exp,c("name.exp","time.exposure"),sep="_") %>%
+step3 <- step2 %>% separate(.data$wide.name.exp,c("name.exp","time.exposure"),sep="_") %>%
   spread(key="name.exp",value="value.exp")
 
 if (censoring=="no" | (censoring=="yes" & diagnostic!=2)) {
-  step4 <- step3 %>% gather_(key_col="wide.name.cov",value_col="value.cov",list.covariate) %>%
-    separate(wide.name.cov,c("name.cov","time.covariate"),sep="_")
+  step4 <- step3 %>% gather(key="wide.name.cov",value="value.cov",list.covariate) %>%
+    separate(.data$wide.name.cov,c("name.cov","time.covariate"),sep="_")
 } else if (censoring=="yes" & diagnostic==2) {
-  step4 <- step3 %>% gather_(key_col="wide.name.cov",value_col="value.cov",c(list.covariate,list.weight.censor)) %>%
-    separate(wide.name.cov,c("name.cov","time.covariate"),sep="_") %>%
+  step4 <- step3 %>% gather(key="wide.name.cov",value="value.cov",c(list.covariate,list.censor,list.weight.censor)) %>%
+    separate(.data$wide.name.cov,c("name.cov","time.covariate"),sep="_") %>%
     spread(key="name.cov",value="value.cov") %>%
-    gather_(key_col="name.cov",value_col="value.cov",covariate.unique)
+    gather(key="name.cov",value="value.cov",covariate.unique)
 }
 
-if (is.null(list.censor)) {
-  step5 <- step4
-} else {
-  step5 <- step4 %>% rename_("censor"=censor.unique) %>%
-    filter(censor==0)
+
+#NEED TO FIX WARNING: issue warning if any of the inputted covariates are not in the final name.cov column
+#if ( any(!covariate.unique %in% as.vector(unique(step5$name.cov)))) warning("Some covariates listed in temporal.covariate and/or static.covariate are either absent or have missing values at all timepoints. These covariates will not be included in the balance table or plot.")
+
+#format data
+if (is.null(censor)) {
+censor.column <- NULL
+
+  if (censoring=="no") {
+
+    step5 <- step4
+
+  }
+
+
+} else if (!is.null(censor)){
+censor.column <- "censor"
+
+  if (censoring=="yes") {
+
+    step5 <- step4 %>% rename(censor=censor.unique) %>%
+      filter(censor==0) #this step drops censored exposure times (for D1/D3), or censored covariate times (for D2)
+
+  }
+
 }
 
-#issue warning if any of the inputted covariates are not in the final name.cov column
-if ( any(!covariate.unique %in% as.vector(unique(step5$name.cov)))) warning("Some covariates listed in temporal.covariate and/or static.covariate are either absent or have missing values at all timepoints. These covariates will not be included in the balance table or plot.")
 
-step5 %>% mutate(time.exposure=as.numeric(time.exposure),time.covariate=as.numeric(time.covariate)) %>%
-  na.omit()
+VarsToFormat <- c(exposure,weight.exposure,censor.column,weight.censor,strata)
+
+if (!is.null(history)) {
+
+  s_history <- sym(history)
+
+  step6 <- step5 %>%
+    mutate(time.exposure=as.numeric(.data$time.exposure),
+           time.covariate=as.numeric(.data$time.covariate)) %>%
+    arrange(.data$name.cov,.data$ID,.data$time.exposure,.data$time.covariate, !! s_history) %>%
+    mutate_at(VarsToFormat,as.numeric) %>%
+    mutate(!! s_id := as.character(.data$ID),
+           !! s_history := as.character(!! s_history),
+           name.cov=as.character(.data$name.cov)
+           ) %>%
+    select(-.data$ID)
+
+  } else if (is.null(history)) {
+
+    step6 <- step5 %>%
+      mutate(time.exposure=as.numeric(.data$time.exposure),
+             time.covariate=as.numeric(.data$time.covariate)) %>%
+      arrange(.data$name.cov,.data$ID,.data$time.exposure,.data$time.covariate) %>%
+      mutate_at(VarsToFormat,as.numeric) %>%
+      mutate(!! s_id := as.character(.data$ID),
+           name.cov=as.character(.data$name.cov)
+      ) %>%
+      select(-.data$ID)
+}
+
+#restrict to appropriate times
+if (diagnostic!=2) {
+
+  step7 <- step6 %>% filter(.data$time.exposure>=.data$time.covariate) #this step drops censored covariate times
+
+} else if (diagnostic==2) {
+
+  step7 <- step6 %>% filter(.data$time.covariate>.data$time.exposure) #this step drops censored exposure times
+
+}
+
+#remove missing data
+  output <- step7 %>%
+    na.omit() %>%
+    data.frame()
+
+output <- output[,c(id,"name.cov","time.exposure","time.covariate",history,exposure,"value.cov",censor.column,weight.exposure,weight.censor,strata)]
+
+return(output)
 
 }
 
@@ -720,6 +964,7 @@ step5 %>% mutate(time.exposure=as.numeric(time.exposure),time.covariate=as.numer
 #' @param distance the distance between exposure and covariate measurements e.g. 2
 #' @param times a vector of measurement times for the covariate e.g. c(1,2,3)
 #' @export
+#' @details omit.history() will take the dataframe produced by lengthen() and remove covariate measurements based on their fixed measurement time or relative distance from exposure measurements (at time t) i.e. ones that do not support exchangeability assumptions at time t. The covariate.name argument is used to name the covariate whose history you wish to modify. To process the same manipulation for a set of covariates, simply supply a vector of covariate names to covariate.name. The omission argument determines whether the covariate history is (i) set to missing for certain covariate measurement times (omission ="fixed" with times=a vector of integers) or (ii) set to missing only for covariate measurement times at or before a certain distance k from exposure measurement times (omission ="relative" with distance=some integer) or (iii) set to missing only for covariate measurements that share the same timing as exposure measurements (omission ="same.time"). The removed values are set to missing. For example, using the "fixed" omission option for covariate "l" at time 2 will set all data on "l" at time 2 to missing, regardless of the exposure measurement time. In contrast, using the "relative" omission option for covariate "l" with distance 2 will only set to missing data on "l" that is measured two units or more before the exposure measurement time (i.e. t-2, t-3, t-4 and so on). Last, using the "same.time" omission option for covariate "l" will set to missing all data on "l" that is measured at the same time as the exposure.  Missing data will be ignored when this dataframe is supplied to the balance() function. They will not contribute to the resulting covariate balance table, nor to plots produced by makeplot(),  nor will they contribute to any summary metrics are estimated by averaging over person-time.
 #' @examples
 #' # Simulate the output of lengthen()
 #' id <- as.numeric(rep(c(1,1,1,2,2,2), 7))
@@ -751,7 +996,7 @@ omit.history <- function (input,
                           distance=NULL,
                           times=NULL) {
 
-
+  input <- ungroup(input)
 
   if (class(input$name.cov) %in% "factor") {
   check <- "is.factor"
@@ -778,11 +1023,11 @@ omit.history <- function (input,
   }
 
   if (omission=="relative") {
-    output <- mutate(input,name.cov=ifelse(name.cov %in% covariate.name & (time.exposure-time.covariate)>=distance,NA,name.cov))
+    output <- mutate(input,name.cov=ifelse(.data$name.cov %in% covariate.name & (.data$time.exposure-.data$time.covariate)>=distance,NA,.data$name.cov))
   } else if (omission=="fixed") {
-    output <- mutate(input,name.cov=ifelse(name.cov %in% covariate.name & (time.covariate %in% times),NA,name.cov))
+    output <- mutate(input,name.cov=ifelse(.data$name.cov %in% covariate.name & (.data$time.covariate %in% times),NA,.data$name.cov))
   } else if (omission=="same.time") {
-    output <- mutate(input,name.cov=ifelse(name.cov %in% covariate.name & (time.exposure==time.covariate),NA,name.cov))
+    output <- mutate(input,name.cov=ifelse(.data$name.cov %in% covariate.name & (.data$time.exposure==.data$time.covariate),NA,.data$name.cov))
   }
 
   if (check=="is.factor") {
@@ -809,6 +1054,7 @@ omit.history <- function (input,
 #' @param ignore.missing.metric "yes" or "no" depending on whether the user wishes to estimate averages over person-time when there are missing values of the mean difference or standardized mean difference. Missing values for the standardized mean difference can occur when, for example, there is no covariate variation within levels of exposure-history and measurement times. If this argument is set to "no" and there are missing values, the average will also be missing. If set to "yes" an average will be produced that ignores missing values.
 #' @param metric the metric for which the user wishes to ignore missing values as specified in the 'ignore.missing.metric' argument.
 #' @export
+#' @details When using the balance() , diagnose(), or  apply.scope() functions, specifying average.over="average" and average.over="time" will return balance metrics for each "distance" value. The output can be subset to specific distances of interest e.g. k=0 and k=2 by supplying a vector to list.distance e.g. c(0,2) but this is optional. Specifying average.over="distance", you can opt to average within segments of distance using the periods argument (leaving this blank will average over all distance values). The periods argument requires a list of contiguous numeric vectors e.g. list(0,1:4,5:10). For Diagnostic 3 this would report metrics at time t, averages over times t-1 to t-4, and averages over times t-5 to t-10. For Diagnostics 1 and 3 the entire range should lie between 0 and t. For Diagnostic 2 the entire range should lie between 1 and t.
 # @examples
 # apply.scope(input,
 #             diagnostic,
@@ -835,14 +1081,22 @@ apply.scope <- function (	input,
 							metric="SMD"
 							) {
 
+  input <- ungroup(input)
+
 	if (ignore.missing.metric=="yes") {
 
 	  if (metric=="SMD") {
-	  input <- input %>% filter(!is.na(SMD))
+
+	  input <- input %>% filter(!is.na(.data$SMD))
+
 	  } else if (metric=="D") {
-	  input <- input %>% filter(!is.na(D))
+
+	  input <- input %>% filter(!is.na(.data$D))
+
 	  }
+
 	}  else if (ignore.missing.metric=="no") {
+
 	}
 
 	  if (scope=="all") {
@@ -854,22 +1108,33 @@ apply.scope <- function (	input,
 		if (average.over=="values" | average.over=="strata" | average.over=="history" | average.over=="time" | average.over=="distance" | is.null(average.over)) {
 
 		  if (length(unique(input$E))==1) {
+
 			final.table <- input
+
 		  } else if (length(unique(input$E))!=1) {
 
 			if (approach!="stratify") {
-			  grouped.table <- input %>% group_by(H,time.exposure,time.covariate,name.cov)
+
+			  grouped.table <- input %>% ungroup() %>% group_by(.data$H,.data$time.exposure,.data$time.covariate,.data$name.cov)
+
 			} else if (approach=="stratify" & diagnostic==2) {
-			  grouped.table <- input %>% group_by(S,time.exposure,time.covariate,name.cov)
+
+			  grouped.table <- input %>% ungroup() %>% group_by(.data$S,.data$time.exposure,.data$time.covariate,.data$name.cov)
+
 			} else if (approach=="stratify" & diagnostic==3) {
-			  grouped.table <- input %>% group_by(S,H,time.exposure,time.covariate,name.cov)
+
+			  grouped.table <- input %>% ungroup() %>% group_by(.data$S,.data$H,.data$time.exposure,.data$time.covariate,.data$name.cov)
+
 			}
 
-			final.table <- grouped.table %>% summarise(D=sum(D*Nexp)/sum(Nexp),
-													   SMD=sum(SMD*Nexp)/sum(Nexp),
-													   Nexp=sum(Nexp),
-													   N=sum(N))
+			final.table <- grouped.table %>%
+			  summarise(D=sum(.data$D*.data$Nexp)/sum(.data$Nexp),
+			            SMD=sum(.data$SMD*.data$Nexp)/sum(.data$Nexp),
+			            Nexp=sum(.data$Nexp),
+			            N=sum(.data$N))
+
 		  }
+
 		}
 
 		if (average.over=="strata" | average.over=="history" | average.over=="time" | average.over=="distance" | is.null(average.over)) {
@@ -877,15 +1142,20 @@ apply.scope <- function (	input,
 		  if ("S" %in% names(final.table)) {
 
 			if (diagnostic==2) {
-			  grouped.table <- final.table %>% group_by(time.exposure,time.covariate,name.cov)
+
+			  grouped.table <- final.table %>% ungroup() %>% group_by(.data$time.exposure,.data$time.covariate,.data$name.cov)
+
 			} else if (diagnostic==3) {
-			  grouped.table <- final.table %>% group_by(H,time.exposure,time.covariate,name.cov)
+
+			  grouped.table <- final.table %>% ungroup() %>% group_by(.data$H,.data$time.exposure,.data$time.covariate,.data$name.cov)
+
 			}
 
-			final.table <- grouped.table %>% summarise(D=sum(D*N)/sum(N),
-													   SMD=sum(SMD*N)/sum(N),
-													   Nexp=sum(Nexp),
-													   N=sum(N))
+			final.table <- grouped.table %>%
+			  summarise(D=sum(.data$D*.data$N)/sum(.data$N),
+			            SMD=sum(.data$SMD*.data$N)/sum(.data$N),
+			            Nexp=sum(.data$Nexp),
+			            N=sum(.data$N))
 
 		  }
 		}
@@ -894,10 +1164,12 @@ apply.scope <- function (	input,
 
 		  if ("H" %in% names(final.table)) {
 
-			final.table <- final.table %>% group_by(time.exposure,time.covariate,name.cov) %>%
-			  summarise(D=sum(D*N)/sum(N),
-						SMD=sum(SMD*N)/sum(N),
-						N=sum(N))
+			final.table <- final.table %>%
+			ungroup()%>%
+			  group_by(.data$time.exposure,.data$time.covariate,.data$name.cov) %>%
+			  summarise(D=sum(.data$D*.data$N)/sum(.data$N),
+			            SMD=sum(.data$SMD*.data$N)/sum(.data$N),
+			            N=sum(.data$N))
 
 		  }
 		}
@@ -906,22 +1178,27 @@ apply.scope <- function (	input,
 
 		  if (diagnostic==1 | diagnostic==3) {
 
-			final.table <- mutate(final.table,distance=time.exposure-time.covariate,time=time.covariate)
+			final.table <- mutate(final.table,distance=.data$time.exposure-.data$time.covariate,time=.data$time.covariate)
 
 		  } else if (diagnostic==2) {
 
-			final.table <- mutate(final.table,distance=time.covariate-time.exposure,time=time.exposure)
+			final.table <- mutate(final.table,distance=.data$time.covariate-.data$time.exposure,time=.data$time.exposure)
 
 		  }
 
-		  final.table <- final.table %>% group_by(distance,name.cov) %>%
-			summarise(D=sum(D*N)/sum(N),
-					  SMD=sum(SMD*N)/sum(N),
-					  N=sum(N))
+		  final.table <- final.table %>%
+		  ungroup() %>%
+		    group_by(.data$distance,.data$name.cov) %>%
+		    summarise(D=sum(.data$D*.data$N)/sum(.data$N),
+		              SMD=sum(.data$SMD*.data$N)/sum(.data$N),
+		              N=sum(.data$N))
 
 		  if (!is.null(list.distance)) {
-		  final.table <- final.table %>% filter (distance %in% list.distance)
+
+		  final.table <- final.table %>% filter (.data$distance %in% list.distance)
+
 		  }
+
 		}
 
 		if (average.over=="distance") {
@@ -948,16 +1225,22 @@ apply.scope <- function (	input,
 			periods[[1]] <- unique(final.table$distance)
 		  }
 
-		  period.table <- final.table %>% ungroup() %>% select(distance) %>% make.period(periods)
+		  period.table <- final.table %>%
+		    ungroup() %>%
+		    select(.data$distance) %>%
+		    make.period(periods)
 
-		  final.table <- data.frame(period.table,final.table) %>% group_by(period.id) %>%
-				mutate(period.start=min(distance),period.end=max(distance)) %>%
-					ungroup()
+		  final.table <- data.frame(period.table,final.table) %>%
+		    group_by(.data$period.id) %>%
+		    mutate(period.start=min(.data$distance),
+				       period.end=max(.data$distance)) %>%
+		    ungroup()
 
-		  final.table <- final.table %>% group_by(period.id,period.start,period.end,name.cov) %>%
-			summarise(D=sum(D*N)/sum(N),
-					  SMD=sum(SMD*N)/sum(N),
-					  N=sum(N))
+		  final.table <- final.table %>%
+		    group_by(.data$period.id,.data$period.start,.data$period.end,.data$name.cov) %>%
+		    summarise(D=sum(.data$D*.data$N)/sum(.data$N),
+		              SMD=sum(.data$SMD*.data$N)/sum(.data$N),
+		              N=sum(.data$N))
 		}
 
 	  } else if (scope=="recent") {
@@ -965,59 +1248,97 @@ apply.scope <- function (	input,
 		if (is.null(recency)) {
 
 		  if (diagnostic!=2) {
+
 			k <- 0
+
 		  } else if (diagnostic==2) {
+
 			k <- 1
+
 		  }
 
 		} else {
+
 		  k <- recency
+
 		}
 
 		if (diagnostic!=2 ) {
 
-		  final.table <- input %>% filter((time.exposure-k)==time.covariate)
+		  final.table <- input %>% filter((.data$time.exposure-k)==.data$time.covariate)
 
 		} else if (diagnostic==2) {
 
-		  final.table <- input %>% filter(time.exposure==(time.covariate-k))
+		  final.table <- input %>% filter(.data$time.exposure==(.data$time.covariate-k))
 
 		}
 
 	  }
 
 	  if ((length(sort.order)==1) | is.null(sort.order)) {
+
 	    if (class(final.table$name.cov) %in% "factor") {
+
 		  sort.order <- levels(final.table$name.cov)
-		  final.table <- final.table %>% ungroup() %>% mutate(name.cov=factor(name.cov,levels=sort.order))
-		} else if (sort.order=="alphabetical") {
+
+		  final.table <- final.table %>%
+		    ungroup() %>%
+		    mutate(name.cov=factor(.data$name.cov,levels=sort.order))
+
+		  } else if (sort.order=="alphabetical") {
+
 		  sorted.cov.names <- sort(unique(final.table$name.cov))
-		  final.table <- final.table %>% ungroup() %>% mutate(name.cov=factor(name.cov,levels=sorted.cov.names))
-		}
+
+		  final.table <- final.table %>%
+		    ungroup() %>%
+		    mutate(name.cov=factor(.data$name.cov,levels=sorted.cov.names))
+
+		  }
+
 	  } else if (length(sort.order)>1 & any(sort.order %in% unique(final.table$name.cov))) {
-	  final.table <- final.table %>% ungroup() %>% mutate(name.cov=factor(name.cov,levels=sort.order))
-	  }
+
+	    final.table <- final.table %>%
+	      ungroup() %>%
+	      mutate(name.cov=factor(.data$name.cov,levels=sort.order))
+
+     }
 
 
 	  if ("E" %in% names(final.table) & "S" %in% names(final.table) & "H" %in% names(final.table)) {
-		final.table <- final.table %>% arrange(E,S,H,name.cov,time.exposure,time.covariate)
+
+		final.table <- final.table %>% arrange(.data$E,.data$S,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate)
+
 		} else if ("E" %in% names(final.table) & "S" %in% names(final.table) & !"H" %in% names(final.table)) {
-		final.table <- final.table %>% arrange(E,S,name.cov,time.exposure,time.covariate)
+
+		final.table <- final.table %>% arrange(.data$E,.data$S,.data$name.cov,.data$time.exposure,.data$time.covariate)
+
 		} else if ("E" %in% names(final.table) & !"S" %in% names(final.table) & "H" %in% names(final.table)) {
-		final.table <- final.table %>% arrange(E,H,name.cov,time.exposure,time.covariate)
+
+		final.table <- final.table %>% arrange(.data$E,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate)
+
 		} else if (!"E" %in% names(final.table) & "S" %in% names(final.table) & !"H" %in% names(final.table)) {
-		final.table <- final.table %>% arrange(S,name.cov,time.exposure,time.covariate)
+
+		final.table <- final.table %>% arrange(.data$S,.data$name.cov,.data$time.exposure,.data$time.covariate)
+
 		} else if (!"E" %in% names(final.table) & !"S" %in% names(final.table) & "H" %in% names(final.table)) {
-		final.table <- final.table %>% arrange(H,name.cov,time.exposure,time.covariate)
+
+		final.table <- final.table %>% arrange(.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate)
+
 		} else if (!"E" %in% names(final.table) & !"S" %in% names(final.table)
 		                                        & !"H" %in% names(final.table)
 												& !"distance" %in% names(final.table)
 												& !"period.id" %in% names(final.table)) {
-		final.table <- final.table %>% arrange(name.cov,time.exposure,time.covariate)
+
+		final.table <- final.table %>% arrange(.data$name.cov,.data$time.exposure,.data$time.covariate)
+
 		} else if ("distance" %in% names(final.table)) {
-		final.table <- final.table %>% arrange(distance,name.cov)
+
+		final.table <- final.table %>% arrange(.data$distance,.data$name.cov)
+
 		} else if ("period.id" %in% names(final.table)) {
-		final.table <- final.table %>% arrange(period.id,period.start,period.end,name.cov)
+
+		final.table <- final.table %>% arrange(.data$period.id,.data$period.start,.data$period.end,.data$name.cov)
+
 		}
 }
 
@@ -1049,6 +1370,7 @@ apply.scope <- function (	input,
 #' @param sd.ref "yes" or "no" depending on whether the user wishes to use the standard deviation of the reference group when calculating the SMD.
 #' @param loop a housekeeping argument the user can ignore. It is automatically set when the balance function is called by the diagnose() function described later. The default is set to "no".
 #' @export
+#' @details When using the balance() , diagnose(), or  apply.scope() functions, specifying average.over="average" and average.over="time" will return balance metrics for each "distance" value. The output can be subset to specific distances of interest e.g. k=0 and k=2 by supplying a vector to list.distance e.g. c(0,2) but this is optional. Specifying average.over="distance", you can opt to average within segments of distance using the periods argument (leaving this blank will average over all distance values). The periods argument requires a list of contiguous numeric vectors e.g. list(0,1:4,5:10). For Diagnostic 3 this would report metrics at time t, averages over times t-1 to t-4, and averages over times t-5 to t-10. For Diagnostics 1 and 3 the entire range should lie between 0 and t. For Diagnostic 2 the entire range should lie between 1 and t.
 #' @examples
 #' # Simulate the output of lengthen() or omit.history()
 #' id <- as.numeric(rep(c(1,1,1,2,2,2), 70))
@@ -1091,12 +1413,14 @@ balance <- function (input,
                      recency=NULL,
                      average.over=NULL,
                      periods=NULL,
-					 list.distance=NULL,
-					 sort.order="alphabetical",
-					 loop="no",
-					 ignore.missing.metric="no",
-					 metric="SMD",
-					 sd.ref="no") {
+                     list.distance=NULL,
+                     sort.order="alphabetical",
+                     loop="no",
+                     ignore.missing.metric="no",
+                     metric="SMD",
+                     sd.ref="no") {
+
+  input <- ungroup(input)
 
   if(is.null(input)) {
     stop ("ERROR: 'input' is missing. Please specify the dataframe created by the lengthen() function")
@@ -1108,7 +1432,7 @@ balance <- function (input,
     stop ("ERROR: 'approach' is missing or misspecified. Please specify as none, weight, or stratify")
  }
 
-  if (diagnostic!=1 & approach=="none") stop ("'diagnostic' has been specified as 2 or 3, and to implement the choice properly, approach needs to be specified as weight or stratify.")
+  if (diagnostic==3 & approach=="none") stop ("'diagnostic' has been specified as 2 or 3, and to implement the choice properly, approach needs to be specified as weight or stratify.")
 
   if(is.null(censoring) | !censoring %in% c("no","yes")) {
     stop ("ERROR: 'censoring' is missing. Please specify it as yes or no")
@@ -1119,7 +1443,7 @@ balance <- function (input,
   if(is.null(exposure) | !exposure %in% names(input)) {
     stop ("ERROR: Either 'exposure' has not been specified OR the exposure root name is not present in the input dataframe")
   }
-  if(!is.null(history) && !history %in% names(input)){
+  if(diagnostic!=2 && !is.null(history) && !history %in% names(input)){
     stop("ERROR: the specified root name for 'history' is not present in the input dataframe")
   }
   if(!is.null(strata) && !strata %in% names(input)){
@@ -1154,17 +1478,21 @@ balance <- function (input,
     stop ("ERROR: When specifying 'periods', the list must only contain numeric or integer values e.g. list(0,2:3,5:9)")
 	} else if (!all(!vector.periods %in% vector.periods[duplicated(vector.periods)])) {
 	stop ("ERROR: When specifying 'periods', the values should be unique e.g. list(0,2:3,5:9")
-	} else if ((!any(vector.periods)==sort(vector.periods))) {
+	} else if (!any(vector.periods==sort(vector.periods))) {
 	stop ("ERROR: When specifying 'periods', the values must be in sorted order e.g. list(0,2:3,5:9)")
 	}
   }
 
-  if (diagnostic==1) {
-    if (is.null(history)) stop ("ERROR: 'history' is missing. Please specify a root name for exposure history")
-  }  else if ((diagnostic==2 | diagnostic==3) & ((is.null(history) | is.null(weight.exposure)) & is.null(strata))) {
-    stop ("ERROR: Please specify the root names for exposure history and exposure weight variables, or the root name for strata variables")
-  } else if ((diagnostic==3 & approach=="stratify") & (is.null(history) | is.null(strata))) {
-  stop ("ERROR: Please specify the root names for exposure history and/or strata variables")
+  if (diagnostic==1 & is.null(history)) {
+    stop("ERROR: For diagnostic 1, please specify the root names for exposure history")
+  } else if (diagnostic==2 & approach=="weight" & (is.null(history) | is.null(weight.exposure))) {
+    stop("ERROR: For diagnostic 2 under weighting, please specify the root names for exposure history and exposure weights")
+  } else if (diagnostic==2 & approach=="stratify" & is.null(strata)) {
+    stop("ERROR: For diagnostic 2 under stratification, please specify the root names for strata")
+  } else if (diagnostic==3 & approach=="weight" & (is.null(history) | is.null(weight.exposure))) {
+    stop("ERROR: For diagnostic 3 under weighting, please specify the root names for exposure history and exposure weights")
+  } else if (diagnostic==3 & approach=="stratify" & (is.null(history) | is.null(strata))) {
+    stop("ERROR: For diagnostic 3 under stratification, please specify the root names for exposure history and strata")
   }
 
   if ((length(sort.order)==1) | is.null(sort.order)) {
@@ -1202,17 +1530,29 @@ balance <- function (input,
 
   if ((all(t.exp.data %in% t.exp.spec)) & (all(t.cov.data %in% t.cov.spec))) {
   } else {
-    input <- input %>% filter((time.exposure %in% t.exp.spec) & (time.covariate %in% t.cov.spec))
+    input <- input %>% filter((.data$time.exposure %in% t.exp.spec) & (.data$time.covariate %in% t.cov.spec))
   }
 
-  input <- rename_(input,"E"=exposure,"H"=history,"S"=strata,"W_a"=weight.exposure,"W_s"=weight.censor)
+  s_exposure <- sym(exposure)
+  s_history <- sym(history)
+  s_strata <- sym(strata)
+  s_weight.exposure <- sym(weight.exposure)
+  s_weight.censor <- sym(weight.censor)
+
+  input <- rename(input,
+                  E =  !! s_exposure,
+                  H=   !! s_history,
+                  S=   !! s_strata,
+                  W_a= !! s_weight.exposure,
+                  W_s= !! s_weight.censor
+                  )
 
   if (approach=="weight" | approach=="none") {
 
     if (censoring=="yes") {
-      input <- mutate(input,W=as.numeric(W_a)*as.numeric(W_s))
+      input <- mutate(input,W=as.numeric(.data$W_a)*as.numeric(.data$W_s))
     } else if (censoring=="no") {
-      input <- mutate(input,W=as.numeric(W_a))
+      input <- mutate(input,W=as.numeric(.data$W_a))
     }
 
     if (diagnostic==1) {
@@ -1220,114 +1560,129 @@ balance <- function (input,
       input <- mutate(input,W=1)
 
       temp.table <-
-        data.frame(input %>% select(E,H,W,time.exposure,time.covariate,name.cov,value.cov) %>%
-                     group_by(E,H,name.cov,time.exposure,time.covariate) %>%
-                     summarise(mean.cov_b=weighted.mean(x=value.cov,w=W,na.rm=TRUE),
-                               sd.cov_b=sd(x=value.cov,na.rm=TRUE),
-                               n.cov_b=sum(W)))
+        data.frame(input %>%
+                     select(.data$E,.data$H,.data$W,.data$time.exposure,.data$time.covariate,.data$name.cov,.data$value.cov) %>%
+                     group_by(.data$E,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate) %>%
+                     summarise(mean.cov_b=weighted.mean(x=.data$value.cov,w=.data$W,na.rm=TRUE),
+                               sd.cov_b=sd(x=.data$value.cov,na.rm=TRUE),
+                               n.cov_b=sum(.data$W)))
 
         check.table <- temp.table %>%
-          group_by(H,time.exposure) %>%
-            summarise(nexpval=n_distinct(E)) %>%
-              group_by()
+          group_by(.data$H,.data$time.exposure) %>%
+            summarise(nexpval=n_distinct(.data$E)) %>%
+              ungroup()
 
         if (all(check.table$nexpval==1)) stop("ERROR: None of the exposure times have exposure variation within levels of exposure history. The program has terminated because the resulting balance table is empty")
         if (any(check.table$nexpval==1)) warning("Some exposure times have no exposure variation within levels of exposure history. Estimates for these times will not appear in the results")
 
-        temp.table <- temp.table %>% group_by(H,name.cov,time.exposure,time.covariate) %>%
-                       mutate(mean.cov_a=first(mean.cov_b),
-                            sd.cov_a=first(sd.cov_b),
-                            n.cov_a=first(n.cov_b)) %>%
-                       filter(E!=first(E))
+        temp.table <- temp.table %>%
+          group_by(.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate) %>%
+          mutate(mean.cov_a=first(.data$mean.cov_b),
+                 sd.cov_a=first(.data$sd.cov_b),
+                 n.cov_a=first(.data$n.cov_b)) %>%
+          filter(.data$E!=first(.data$E))
 
-      if (sd.ref=="no"){
-          full.table <- temp.table %>% mutate(D=mean.cov_b-mean.cov_a,
-                                              SMD=ifelse(D==0,0,
-                                                ifelse(sd.cov_b==0 | sd.cov_a==0,NA_real_,
-												                              (mean.cov_b-mean.cov_a)/sqrt((sd.cov_a^2*(n.cov_a-1)+sd.cov_b^2*(n.cov_b-1))/(n.cov_a+n.cov_b-2)))),
-                                              N=n.cov_a+n.cov_b,
-                                              Nexp=n.cov_b)
-      } else if (sd.ref=="yes"){
-          full.table <- temp.table %>% mutate(D=mean.cov_b-mean.cov_a,
-                                              SMD=ifelse(D==0,0,
-                                                         ifelse(sd.cov_b==0 | sd.cov_a==0,NA_real_,
-                                                                (mean.cov_b-mean.cov_a)/sd.cov_a)),
-                                              N=n.cov_a+n.cov_b,
-                                              Nexp=n.cov_b)
+        if (sd.ref=="no"){
+
+          full.table <- temp.table %>%
+            mutate(D=.data$mean.cov_b-.data$mean.cov_a,
+                   SMD=ifelse(.data$D==0,0,
+                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
+                                     (.data$mean.cov_b-.data$mean.cov_a)/sqrt((.data$sd.cov_a^2*(.data$n.cov_a-1)+.data$sd.cov_b^2*(.data$n.cov_b-1))/(.data$n.cov_a+.data$n.cov_b-2)))),
+                   N=.data$n.cov_a+.data$n.cov_b,
+                   Nexp=.data$n.cov_b)
+
+          } else if (sd.ref=="yes"){
+
+            full.table <- temp.table %>%
+              mutate(D=.data$mean.cov_b-.data$mean.cov_a,
+                     SMD=ifelse(.data$D==0,0,
+                                ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
+                                       (.data$mean.cov_b-.data$mean.cov_a)/.data$sd.cov_a)),
+                     N=.data$n.cov_a+.data$n.cov_b,
+                     Nexp=.data$n.cov_b)
         }
 
       if ( any(is.na(unique(full.table$SMD))) ) warning("SMD values have been set to missing where there is no covariate variation within some level of time-exposure, time-covariate, exposure history, and exposure value; in this case averages for SMD estimates will also appear as missing")
       if ( all(full.table$D==0) & all(full.table$SMD==0) ) warning("There may be no covariate variation within any level of time-exposure, time-covariate, exposure history and/or strata, and exposure value; please ensure that the temporal covariates are specified correctly.")
 
-
       sub.table  <- full.table %>%
-                      select(E,H,name.cov,time.exposure,time.covariate,D,SMD,N,Nexp) %>%
-                        filter (!is.na(D)) %>%
-                          filter(time.exposure>=time.covariate) %>%
-                            arrange(name.cov,time.exposure,time.covariate,H)
+        select(.data$E,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate,.data$D,.data$SMD,.data$N,.data$Nexp) %>%
+        filter (!is.na(.data$D)) %>%
+        filter(.data$time.exposure>=.data$time.covariate) %>%
+        arrange(.data$name.cov,.data$time.exposure,.data$time.covariate,.data$H)
 
-    } else if (diagnostic==2 | diagnostic==3) {
+      } else if (diagnostic==2 | diagnostic==3) {
 
-      temp.table <-
-        data.frame(input %>% select(E,H,W,time.exposure,time.covariate,name.cov,value.cov) %>%
-                     group_by(E,H,name.cov,time.exposure,time.covariate) %>%
-                     summarise(mean.cov_b=weighted.mean(x=value.cov,w=W,na.rm=TRUE),
-                               sd.cov_b=sd(x=value.cov,na.rm=TRUE),
-                               n.cov_b=sum(W)))
+        temp.table <-
+        data.frame(input %>%
+                     select(.data$E,.data$H,.data$W,.data$time.exposure,.data$time.covariate,.data$name.cov,.data$value.cov) %>%
+                     group_by(.data$E,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate) %>%
+                     summarise(mean.cov_b=weighted.mean(x=.data$value.cov,w=.data$W,na.rm=TRUE),
+                               sd.cov_b=sd(x=.data$value.cov,na.rm=TRUE),
+                               n.cov_b=sum(.data$W)))
 
         check.table <- temp.table %>%
-          group_by(H,time.exposure) %>%
-            summarise(nexpval=n_distinct(E)) %>%
-              group_by()
+          group_by(.data$H,.data$time.exposure) %>%
+            summarise(nexpval=n_distinct(.data$E)) %>%
+              ungroup()
 
         if (all(check.table$nexpval==1)) stop("ERROR: None of the exposure times have exposure variation within levels of exposure history. The program has terminated because the resulting balance table is empty")
         if (any(check.table$nexpval==1)) warning("Some exposure times have no exposure variation within levels of exposure history. Estimates for these times will not appear in the results")
 
-        temp.table <- temp.table %>% group_by(H,name.cov,time.exposure,time.covariate) %>%
-                     mutate(mean.cov_a=first(mean.cov_b),
-                            sd.cov_a=first(sd.cov_b),
-                            n.cov_a=first(n.cov_b)) %>%
-                     filter(E!=first(E))
+        temp.table <- temp.table %>%
+          group_by(.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate) %>%
+          mutate(mean.cov_a=first(.data$mean.cov_b),
+                 sd.cov_a=first(.data$sd.cov_b),
+                 n.cov_a=first(.data$n.cov_b)) %>%
+          filter(.data$E!=first(.data$E))
 
         if (sd.ref=="no"){
-      full.table <- temp.table %>% mutate(D=mean.cov_b-mean.cov_a,
-                                          SMD=ifelse(D==0,0,
-                                                     ifelse(sd.cov_b==0 | sd.cov_a==0,NA_real_,
-                                                            (mean.cov_b-mean.cov_a)/sqrt((sd.cov_a^2*(n.cov_a-1)+sd.cov_b^2*(n.cov_b-1))/(n.cov_a+n.cov_b-2)))),
-                                          N=n.cov_a+n.cov_b,
-                                          Nexp=n.cov_b)
-        } else if (sd.ref=="yes"){
-          full.table <- temp.table %>% mutate(D=mean.cov_b-mean.cov_a,
-                                              SMD=ifelse(D==0,0,
-                                                         ifelse(sd.cov_b==0 | sd.cov_a==0,NA_real_,
-                                                                (mean.cov_b-mean.cov_a)/sd.cov_a)),
-                                              N=n.cov_a+n.cov_b,
-                                              Nexp=n.cov_b)
-        }
 
+          full.table <- temp.table %>%
+            mutate(D=.data$mean.cov_b-.data$mean.cov_a,
+                   SMD=ifelse(.data$D==0,0,
+                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
+                                     (.data$mean.cov_b-.data$mean.cov_a)/sqrt((.data$sd.cov_a^2*(.data$n.cov_a-1)+.data$sd.cov_b^2*(.data$n.cov_b-1))/(.data$n.cov_a+.data$n.cov_b-2)))),
+                   N=.data$n.cov_a+.data$n.cov_b,
+                   Nexp=.data$n.cov_b)
+
+        } else if (sd.ref=="yes"){
+
+          full.table <- temp.table %>%
+            mutate(D=.data$mean.cov_b-.data$mean.cov_a,
+                   SMD=ifelse(.data$D==0,0,
+                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
+                                     (.data$mean.cov_b-.data$mean.cov_a)/.data$sd.cov_a)),
+                   N=.data$n.cov_a+.data$n.cov_b,
+                   Nexp=.data$n.cov_b)
+        }
 
       if ( any(is.na(unique(full.table$SMD))) ) warning("SMD values have been set to missing where there is no covariate variation within  some level of time-exposure, time-covariate, exposure history, and exposure value; in this case averages for SMD estimates will also appear as missing")
       if ( all(full.table$D==0) & all(full.table$SMD==0) ) warning("There may be no covariate variation within any level of time-exposure, time-covariate, exposure history and/or strata, and exposure value; please ensure that the temporal covariates are specified correctly.")
 
-
-      full.table <- full.table %>% select(E,H,name.cov,time.exposure,time.covariate,D,SMD,N,Nexp)
+      full.table <- full.table %>% select(.data$E,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate,.data$D,.data$SMD,.data$N,.data$Nexp)
 
       if (diagnostic==2) {
 
-        sub.table <- full.table %>% filter (!is.na(D)) %>% filter(time.exposure<time.covariate)
+        sub.table <- full.table %>% filter (!is.na(.data$D)) %>% filter(.data$time.exposure<.data$time.covariate)
 
       } else if (diagnostic==3) {
 
-        sub.table <- full.table %>% filter (!is.na(D)) %>% filter(time.exposure>=time.covariate)
+        sub.table <- full.table %>% filter (!is.na(.data$D)) %>% filter(.data$time.exposure>=.data$time.covariate)
       }
     }
 
   } else if (approach=="stratify") {
 
     if (censoring=="yes") {
-      input <- mutate(input,W=as.numeric(W_s))
+
+      input <- mutate(input,W=as.numeric(.data$W_s))
+
     } else if (censoring=="no") {
+
       input <- mutate(input,W=1)
+
     }
 
     if (diagnostic==1) {
@@ -1335,91 +1690,100 @@ balance <- function (input,
       input <- mutate(input,W=1)
 
       temp.table <-
-        data.frame(input %>% select(E,H,W,time.exposure,time.covariate,name.cov,value.cov) %>%
-                     group_by(E,H,name.cov,time.exposure,time.covariate) %>%
-                     summarise(mean.cov_b=weighted.mean(x=value.cov,w=W,na.rm=TRUE),
-                               sd.cov_b=sd(x=value.cov,na.rm=TRUE),
-                               n.cov_b=sum(W)))
+        data.frame(input %>% select(.data$E,.data$H,.data$W,.data$time.exposure,.data$time.covariate,.data$name.cov,.data$value.cov) %>%
+                     group_by(.data$E,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate) %>%
+                     summarise(mean.cov_b=weighted.mean(x=.data$value.cov,w=.data$W,na.rm=TRUE),
+                               sd.cov_b=sd(x=.data$value.cov,na.rm=TRUE),
+                               n.cov_b=sum(.data$W)))
 
         check.table <- temp.table %>%
-          group_by(H,time.exposure) %>%
-            summarise(nexpval=n_distinct(E)) %>%
-              group_by()
+          group_by(.data$H,.data$time.exposure) %>%
+            summarise(nexpval=n_distinct(.data$E)) %>%
+              ungroup()
 
         if (all(check.table$nexpval==1)) stop("ERROR: None of the exposure times have exposure variation within levels of exposure history. The program has terminated because the resulting balance table is empty")
         if (any(check.table$nexpval==1)) warning("Some exposure times have no exposure variation within levels of exposure history. Estimates for these times will not appear in the results")
 
-        temp.table <- temp.table %>% group_by(H,name.cov,time.exposure,time.covariate) %>%
-                     mutate(mean.cov_a=first(mean.cov_b),
-                            sd.cov_a=first(sd.cov_b),
-                            n.cov_a=first(n.cov_b)) %>%
-                     filter(E!=first(E))
+        temp.table <- temp.table %>% group_by(.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate) %>%
+                     mutate(mean.cov_a=first(.data$mean.cov_b),
+                            sd.cov_a=first(.data$sd.cov_b),
+                            n.cov_a=first(.data$n.cov_b)) %>%
+                     filter(.data$E!=first(.data$E))
 
         if (sd.ref=="no"){
-      full.table <- temp.table %>% mutate(D=mean.cov_b-mean.cov_a,
-                                          SMD=ifelse(D==0,0,
-                                                     ifelse(sd.cov_b==0 | sd.cov_a==0,NA_real_,
-                                                            (mean.cov_b-mean.cov_a)/sqrt((sd.cov_a^2*(n.cov_a-1)+sd.cov_b^2*(n.cov_b-1))/(n.cov_a+n.cov_b-2)))),
-                                          N=n.cov_a+n.cov_b,
-                                          Nexp=n.cov_b)
-        } else if (sd.ref=="yes"){
-          full.table <- temp.table %>% mutate(D=mean.cov_b-mean.cov_a,
-                                              SMD=ifelse(D==0,0,
-                                                         ifelse(sd.cov_b==0 | sd.cov_a==0,NA_real_,
-                                                                (mean.cov_b-mean.cov_a)/sd.cov_a)),
-                                              N=n.cov_a+n.cov_b,
-                                              Nexp=n.cov_b)
-        }
 
+          full.table <- temp.table %>%
+            mutate(D=.data$mean.cov_b-.data$mean.cov_a,
+                   SMD=ifelse(.data$D==0,0,
+                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
+                                     (.data$mean.cov_b-.data$mean.cov_a)/sqrt((.data$sd.cov_a^2*(.data$n.cov_a-1)+.data$sd.cov_b^2*(.data$n.cov_b-1))/(.data$n.cov_a+.data$n.cov_b-2)))),
+                   N=.data$n.cov_a+.data$n.cov_b,
+                   Nexp=.data$n.cov_b)
+
+        } else if (sd.ref=="yes"){
+
+          full.table <- temp.table %>%
+            mutate(D=.data$mean.cov_b-.data$mean.cov_a,
+                   SMD=ifelse(.data$D==0,0,
+                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
+                                     (.data$mean.cov_b-.data$mean.cov_a)/.data$sd.cov_a)),
+                   N=.data$n.cov_a+.data$n.cov_b,
+                   Nexp=.data$n.cov_b)
+        }
 
       if ( any(is.na(unique(full.table$SMD))) ) warning("SMD values have been set to missing where there is no covariate variation within some level of time-exposure, time-covariate, exposure history, and exposure value; in this case averages for SMD estimates will also appear as missing")
       if ( all(full.table$D==0) & all(full.table$SMD==0) ) warning("There may be no covariate variation within any level of time-exposure, time-covariate, exposure history and/or strata, and exposure value; please ensure that the temporal covariates are specified correctly.")
 
-
       sub.table <- full.table %>%
-                    select(E,H,name.cov,time.exposure,time.covariate,D,SMD,N,Nexp) %>%
-                      filter (!is.na(D)) %>%
-                        filter(time.exposure>=time.covariate) %>%
-                          arrange(name.cov,time.exposure,time.covariate,H)
+                    select(.data$E,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate,.data$D,.data$SMD,.data$N,.data$Nexp) %>%
+                      filter (!is.na(.data$D)) %>%
+                        filter(.data$time.exposure>=.data$time.covariate) %>%
+                          arrange(.data$name.cov,.data$time.exposure,.data$time.covariate,.data$H)
 
     } else if (diagnostic==2) {
 
       values.exposure <- sort(unique(input$E))
       temp.table <-
-        data.frame(input %>% select(E,S,W,time.exposure,time.covariate,name.cov,value.cov) %>%
-                     group_by(E,S,name.cov,time.exposure,time.covariate) %>%
-                     summarise(mean.cov_b=weighted.mean(x=value.cov,w=W,na.rm=TRUE),
-                               sd.cov_b=sd(x=value.cov,na.rm=TRUE),
-                               n.cov_b=sum(W)))
+        data.frame(input %>%
+                     select(.data$E,.data$S,.data$W,.data$time.exposure,.data$time.covariate,.data$name.cov,.data$value.cov) %>%
+                     group_by(.data$E,.data$S,.data$name.cov,.data$time.exposure,.data$time.covariate) %>%
+                     summarise(mean.cov_b=weighted.mean(x=.data$value.cov,w=.data$W,na.rm=TRUE),
+                               sd.cov_b=sd(x=.data$value.cov,na.rm=TRUE),
+                               n.cov_b=sum(.data$W)))
 
        check.table <- temp.table %>%
-         group_by(S,time.exposure) %>%
-           summarise(nexpval=n_distinct(E)) %>%
-             group_by()
+         group_by(.data$S,.data$time.exposure) %>%
+           summarise(nexpval=n_distinct(.data$E)) %>%
+             ungroup()
 
        if (all(check.table$nexpval==1)) stop("ERROR: None of the exposure times have exposure variation within levels of exposure history. The program has terminated because the resulting balance table is empty")
        if (any(check.table$nexpval==1)) warning("Some exposure times have no exposure variation within levels of strata. Estimates for these times will not appear in the results")
 
-        temp.table <- temp.table %>% group_by(S,name.cov,time.exposure,time.covariate) %>%
-                     mutate(mean.cov_a=first(mean.cov_b),
-                            sd.cov_a=first(sd.cov_b),
-                            n.cov_a=first(n.cov_b)) %>%
-                     filter(E!=first(E))
+        temp.table <- temp.table %>%
+          group_by(.data$S,.data$name.cov,.data$time.exposure,.data$time.covariate) %>%
+          mutate(mean.cov_a=first(.data$mean.cov_b),
+                 sd.cov_a=first(.data$sd.cov_b),
+                 n.cov_a=first(.data$n.cov_b)) %>%
+          filter(.data$E!=first(.data$E))
 
         if (sd.ref=="no"){
-      full.table <- temp.table %>% mutate(D=mean.cov_b-mean.cov_a,
-                                          SMD=ifelse(D==0,0,
-                                                     ifelse(sd.cov_b==0 | sd.cov_a==0,NA_real_,
-                                                            (mean.cov_b-mean.cov_a)/sqrt((sd.cov_a^2*(n.cov_a-1)+sd.cov_b^2*(n.cov_b-1))/(n.cov_a+n.cov_b-2)))),
-                                          N=n.cov_a+n.cov_b,
-                                          Nexp=n.cov_b)
+          full.table <- temp.table %>%
+            mutate(D=.data$mean.cov_b-.data$mean.cov_a,
+                   SMD=ifelse(.data$D==0,0,
+                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
+                                     (.data$mean.cov_b-.data$mean.cov_a)/sqrt((.data$sd.cov_a^2*(.data$n.cov_a-1)+.data$sd.cov_b^2*(.data$n.cov_b-1))/(.data$n.cov_a+.data$n.cov_b-2)))),
+                   N=.data$n.cov_a+.data$n.cov_b,
+                   Nexp=.data$n.cov_b)
+
         } else if (sd.ref=="yes"){
-          full.table <- temp.table %>% mutate(D=mean.cov_b-mean.cov_a,
-                                              SMD=ifelse(D==0,0,
-                                                         ifelse(sd.cov_b==0 | sd.cov_a==0,NA_real_,
-                                                                (mean.cov_b-mean.cov_a)/sd.cov_a)),
-                                              N=n.cov_a+n.cov_b,
-                                              Nexp=n.cov_b)
+
+          full.table <- temp.table %>%
+            mutate(D=.data$mean.cov_b-.data$mean.cov_a,
+                   SMD=ifelse(.data$D==0,0,
+                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
+                                     (.data$mean.cov_b-.data$mean.cov_a)/.data$sd.cov_a)),
+                   N=.data$n.cov_a+.data$n.cov_b,
+                   Nexp=.data$n.cov_b)
         }
 
 
@@ -1428,65 +1792,71 @@ balance <- function (input,
 
 
       sub.table <-  full.table %>%
-                     select(E,S,name.cov,time.exposure,time.covariate,D,SMD,N,Nexp) %>%
-                       filter (!is.na(D)) %>%
-                         filter(time.exposure<time.covariate) %>%
-                           arrange(S,name.cov,time.exposure,time.covariate)
+                     select(.data$E,.data$S,.data$name.cov,.data$time.exposure,.data$time.covariate,.data$D,.data$SMD,.data$N,.data$Nexp) %>%
+                       filter (!is.na(.data$D)) %>%
+                         filter(.data$time.exposure<.data$time.covariate) %>%
+                           arrange(.data$S,.data$name.cov,.data$time.exposure,.data$time.covariate)
 
     } else if (diagnostic==3) {
 
       temp.table <-
-        data.frame(input %>% select(E,S,H,W,time.exposure,time.covariate,name.cov,value.cov) %>%
-                     group_by(E,S,H,time.exposure,time.covariate,name.cov) %>%
-                     summarise(mean.cov_b=weighted.mean(x=value.cov,w=W,na.rm=TRUE),
-                               sd.cov_b=sd(x=value.cov,na.rm=TRUE),
-                               n.cov_b=sum(W)))
+        data.frame(input %>%
+                     select(.data$E,.data$S,.data$H,.data$W,.data$time.exposure,.data$time.covariate,.data$name.cov,.data$value.cov) %>%
+                     group_by(.data$E,.data$S,.data$H,.data$time.exposure,.data$time.covariate,.data$name.cov) %>%
+                     summarise(mean.cov_b=weighted.mean(x=.data$value.cov,w=.data$W,na.rm=TRUE),
+                               sd.cov_b=sd(x=.data$value.cov,na.rm=TRUE),
+                               n.cov_b=sum(.data$W)))
 
         check.table <- temp.table %>%
-          group_by(S,H,time.exposure) %>%
-            summarise(nexpval=n_distinct(E)) %>%
-              group_by()
+          group_by(.data$S,.data$H,.data$time.exposure) %>%
+            summarise(nexpval=n_distinct(.data$E)) %>%
+              ungroup()
 
         if (all(check.table$nexpval==1)) stop("ERROR: None of the exposure times have exposure variation within levels of exposure history. The program has terminated because the resulting balance table is empty")
         if (any(check.table$nexpval==1)) warning("Some exposure times have no exposure variation within levels of strata and exposure history. Estimates for these times will not appear in the results")
 
-        temp.table <- temp.table %>% group_by(S,H,name.cov,time.exposure,time.covariate) %>%
-                     mutate(mean.cov_a=first(mean.cov_b),
-                            sd.cov_a=first(sd.cov_b),
-                            n.cov_a=first(n.cov_b)) %>%
-                     filter(E!=first(E))
+        temp.table <- temp.table %>%
+          group_by(.data$S,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate) %>%
+          mutate(mean.cov_a=first(.data$mean.cov_b),
+                 sd.cov_a=first(.data$sd.cov_b),
+                 n.cov_a=first(.data$n.cov_b)) %>%
+          filter(.data$E!=first(.data$E))
 
         if (sd.ref=="no"){
-       full.table <- temp.table %>% mutate(D=mean.cov_b-mean.cov_a,
-                                          SMD=ifelse(D==0,0,
-                                                     ifelse(sd.cov_b==0 | sd.cov_a==0,NA_real_,
-                                                            (mean.cov_b-mean.cov_a)/sqrt((sd.cov_a^2*(n.cov_a-1)+sd.cov_b^2*(n.cov_b-1))/(n.cov_a+n.cov_b-2)))),
-                                          N=n.cov_a+n.cov_b,
-                                          Nexp=n.cov_b)
-        } else if (sd.ref=="yes"){
-          full.table <- temp.table %>% mutate(D=mean.cov_b-mean.cov_a,
-                                              SMD=ifelse(D==0,0,
-                                                         ifelse(sd.cov_b==0 | sd.cov_a==0,NA_real_,
-                                                                (mean.cov_b-mean.cov_a)/sd.cov_a)),
-                                              N=n.cov_a+n.cov_b,
-                                              Nexp=n.cov_b)
-        }
 
+          full.table <- temp.table %>%
+            mutate(D=.data$mean.cov_b-.data$mean.cov_a,
+                   SMD=ifelse(.data$D==0,0,
+                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
+                                     (.data$mean.cov_b-.data$mean.cov_a)/sqrt((.data$sd.cov_a^2*(.data$n.cov_a-1)+.data$sd.cov_b^2*(.data$n.cov_b-1))/(.data$n.cov_a+.data$n.cov_b-2)))),
+                   N=.data$n.cov_a+.data$n.cov_b,
+                   Nexp=.data$n.cov_b)
+
+        } else if (sd.ref=="yes"){
+
+          full.table <- temp.table %>%
+            mutate(D=.data$mean.cov_b-.data$mean.cov_a,
+                   SMD=ifelse(.data$D==0,0,
+                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
+                                     (.data$mean.cov_b-.data$mean.cov_a)/.data$sd.cov_a)),
+                   N=.data$n.cov_a+.data$n.cov_b,
+                   Nexp=.data$n.cov_b)
+        }
 
         if ( any(is.na(unique(full.table$SMD))) ) warning("SMD values have been set to missing where there is no covariate variation within some level of time-exposure, time-covariate, strata, exposure history, and exposure value; in this case averages for SMD estimates will also appear as missing")
         if ( all(full.table$D==0) & all(full.table$SMD==0) ) warning("There may be no covariate variation within any level of time-exposure, time-covariate, exposure history and/or strata, and exposure value; please ensure that the temporal covariates are specified correctly.")
 
-
         sub.table <- full.table %>%
-                       select(E,S,H,name.cov,time.exposure,time.covariate,D,SMD,N,Nexp) %>%
-                         filter (!is.na(D)) %>%
-                           filter(time.exposure>=time.covariate) %>%
-                             arrange(S,name.cov,time.exposure,time.covariate,H)
+                       select(.data$E,.data$S,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate,.data$D,.data$SMD,.data$N,.data$Nexp) %>%
+                         filter (!is.na(.data$D)) %>%
+                           filter(.data$time.exposure>=.data$time.covariate) %>%
+                             arrange(.data$S,.data$name.cov,.data$time.exposure,.data$time.covariate,.data$H)
 
     }
   }
 
   if (loop=="no") {
+
   output <- apply.scope(input=sub.table,
 						diagnostic=diagnostic,
 						approach=approach,
@@ -1497,14 +1867,18 @@ balance <- function (input,
 						recency=recency,
 						sort.order=sort.order,
 						ignore.missing.metric=ignore.missing.metric,
-						metric=metric)
+						metric=metric) %>%
+    data.frame()
+
   } else if (loop=="yes") {
-  output <- sub.table
+
+  output <- sub.table %>%
+    data.frame()
+
   }
+
   return(output)
 }
-
-
 
 ##########
 #DIAGNOSE#
@@ -1535,7 +1909,9 @@ balance <- function (input,
 #' @param ignore.missing.metric "yes" or "no" depending on whether the user wishes to estimate averages over person-time when there are missing values of the mean difference or standardized mean difference. Missing values for the standardized mean difference can occur when, for example, there is no covariate variation within levels of exposure-history and measurement times. If this argument is set to "no" and there are missing values, the average will also be missing. If set to "yes" an average will be produced that ignores missing values.
 #' @param metric the metric for which the user wishes to ignore missing values as specified in the 'ignore.missing.metric' argument.
 #' @param loop "yes" to iteratively apply balance() and lengthen() or "no" to process all covariates and measurement times at once.
+#' @param sd.ref "yes" or "no" depending on whether the user wishes to use the standard deviation of the reference group when calculating the SMD.
 #' @export
+#' @details When using the balance() , diagnose(), or  apply.scope() functions, specifying average.over="average" and average.over="time" will return balance metrics for each "distance" value. The output can be subset to specific distances of interest e.g. k=0 and k=2 by supplying a vector to list.distance e.g. c(0,2) but this is optional. Specifying average.over="distance", you can opt to average within segments of distance using the periods argument (leaving this blank will average over all distance values). The periods argument requires a list of contiguous numeric vectors e.g. list(0,1:4,5:10). For Diagnostic 3 this would report metrics at time t, averages over times t-1 to t-4, and averages over times t-5 to t-10. For Diagnostics 1 and 3 the entire range should lie between 0 and t. For Diagnostic 2 the entire range should lie between 1 and t.
 #' @examples
 #' # This example uses the included "example_sml.rda" data set
 #'
@@ -1553,34 +1929,38 @@ balance <- function (input,
 #'          sort.order="alphabetical",
 #'          history="h",
 #'          ignore.missing.metric="no",
-#'          loop="yes")
+#'          loop="yes",
+#'          sd.ref="no")
 
 diagnose <- function (
-				input,
-				diagnostic,
-				approach="none",
-				scope,
-				censoring,
-				id,
-				times.exposure,
-				times.covariate,
-				exposure,
-				temporal.covariate,
-				static.covariate=NULL,
-				history=NULL,
-				weight.exposure=NULL,
-				censor=NULL,
-				weight.censor=NULL,
-				strata=NULL,
-				recency=NULL,
-				average.over=NULL,
-				periods=NULL,
-				list.distance=NULL,
-				sort.order="alphabetical",
-				loop="no",
-				ignore.missing.metric="no",
-				metric="SMD"
+  input,
+  diagnostic,
+  approach="none",
+  scope,
+  censoring,
+  id,
+  times.exposure,
+  times.covariate,
+  exposure,
+  temporal.covariate,
+  static.covariate=NULL,
+  history=NULL,
+  weight.exposure=NULL,
+  censor=NULL,
+  weight.censor=NULL,
+  strata=NULL,
+  recency=NULL,
+  average.over=NULL,
+  periods=NULL,
+  list.distance=NULL,
+  sort.order="alphabetical",
+  loop="no",
+  ignore.missing.metric="no",
+  metric="SMD",
+  sd.ref="no"
 ) {
+
+  input <- ungroup(input)
 
 	loop.fxn <- function (arg.temporal.covariate,arg.static.covariate,arg.times.exposure,arg.times.covariate) {
 
@@ -1621,7 +2001,8 @@ diagnose <- function (
 			sort.order=sort.order,
 			loop=loop,
 			ignore.missing.metric=ignore.missing.metric,
-			metric=metric
+			metric=metric,
+			sd.ref=sd.ref
 			)
 
 	}
@@ -1943,14 +2324,15 @@ makeplot <- function (input,
                       refline.limit.a=-.25,
                       refline.limit.b=0.25,
                       panel.spacing.size=.75,
-					  axis.title=NULL,
-					  label.width=15,
-					  groupvar="none",
-					  shape=NULL,
-					  colour=NULL,
-					  legend.title="",
-					  legend.position="bottom",
-					  text.legend=NULL) {
+                      axis.title=NULL,
+                      label.width=15,
+                      groupvar="none",
+                      shape=NULL,
+                      colour=NULL,
+                      legend.title="",
+                      legend.position="bottom",
+                      text.legend=NULL) {
+
 
   if(is.null(input)) {
     stop ("ERROR: 'input' is missing. Please specify the dataframe created by the balance() function")
@@ -1978,9 +2360,9 @@ makeplot <- function (input,
   }
 
   if (metric=="D") {
-    input <- mutate(input,plot.metric=D)
+    input <- mutate(input,plot.metric=.data$D)
   } else if (metric=="SMD") {
-    input <- mutate(input,plot.metric=SMD)
+    input <- mutate(input,plot.metric=.data$SMD)
   }
 
   nonmiss.metric <- sum(!is.na(input$plot.metric))
@@ -2001,6 +2383,7 @@ makeplot <- function (input,
   if (is.null(stratum) & approach!="stratify") {
     stratum <- rep(1,nrow(input))
   }
+
 
   themes <- theme(aspect.ratio=ratio,
                   axis.title = element_text(size=text.axis.title,face="bold"),
@@ -2028,74 +2411,99 @@ makeplot <- function (input,
   }
 
   if (approach=="weight" | approach=="none" | (approach=="stratify" & scope=="average" & average.over!="values")) {
+
     sub.input <- input
+
   } else if (approach=="stratify" & (scope=="all" | scope=="recent" | (scope=="average" & average.over=="values"))) {
-    sub.input <- input %>% filter(S==stratum)
+
+    sub.input <- input %>% filter(.data$S==stratum)
+
   }
 
   if (scope=="all" | scope=="recent" | (scope=="average" & average.over!="time" & average.over!="distance")) {
 
-    labelled.input <- sub.input %>% mutate(exposure=paste(label.exposure,"(",time.exposure,")",sep=""),
-                                           covariate=paste(label.covariate,"(",time.covariate,")",sep=""),
-                                           comparison=paste(exposure," vs ",covariate,sep="")
-                                           )
+    labelled.input <- sub.input %>%
+      mutate(exposure=paste(label.exposure,"(",.data$time.exposure,")",sep=""),
+             covariate=paste(label.covariate,"(",.data$time.covariate,")",sep=""),
+             comparison=paste(.data$exposure," vs ",.data$covariate,sep="")
+             )
 
-	values.exposure  <- labelled.input %>% select(time.exposure,exposure) %>% unique()
-	values.covariate <- labelled.input %>% select(time.covariate,covariate) %>% unique()
-	values.comparison <- labelled.input %>% select(comparison,time.exposure,time.covariate) %>% unique()
+    values.exposure  <- labelled.input %>% select(.data$time.exposure,.data$exposure) %>% unique()
+    values.covariate <- labelled.input %>% select(.data$time.covariate,.data$covariate) %>% unique()
+    values.comparison <- labelled.input %>% select(.data$comparison,.data$time.exposure,.data$time.covariate) %>% unique()
 
-	AscendOrderExposure   <- arrange(values.exposure,time.exposure)
-	AscendOrderCovariate  <- arrange(values.covariate,time.covariate)
-	DescendOrderExposure  <- arrange(values.exposure,desc(time.exposure))
-	DescendOrderCovariate <- arrange(values.covariate,desc(time.covariate))
-	AscendOrderComparison <- arrange(values.comparison,time.exposure,time.covariate)
+    AscendOrderExposure   <- arrange(values.exposure,.data$time.exposure)
+    AscendOrderCovariate  <- arrange(values.covariate,.data$time.covariate)
+    DescendOrderExposure  <- arrange(values.exposure,desc(.data$time.exposure))
+    DescendOrderCovariate <- arrange(values.covariate,desc(.data$time.covariate))
+    AscendOrderComparison <- arrange(values.comparison,.data$time.exposure,.data$time.covariate)
 
-    labelled.input <- labelled.input %>% mutate(exposure=factor(exposure,levels=AscendOrderExposure$exposure),
-                                                covariate=factor(covariate,levels=AscendOrderCovariate$covariate),
-												rev.exposure=factor(exposure,levels=DescendOrderExposure$exposure),
-                                                rev.covariate=factor(covariate,levels=DescendOrderCovariate$covariate),
-												comparison=factor(comparison,levels=AscendOrderComparison$comparison))
+    labelled.input <- labelled.input %>%
+      mutate(exposure=factor(.data$exposure,levels=AscendOrderExposure$exposure),
+             covariate=factor(.data$covariate,levels=AscendOrderCovariate$covariate),
+             rev.exposure=factor(.data$exposure,levels=DescendOrderExposure$exposure),
+             rev.covariate=factor(.data$covariate,levels=DescendOrderCovariate$covariate),
+             comparison=factor(.data$comparison,levels=AscendOrderComparison$comparison))
 
-  } else if (average.over=="time" & diagnostic!=2) {
-    labelled.input <- sub.input %>% mutate(comparison=paste(label.covariate,"(t-",distance,") vs ",label.exposure,"(t)",sep=""))
-	values.distance        <- unique(labelled.input$distance)
-	values.comparison      <- labelled.input %>% select(comparison,distance) %>% unique()
-	DescendOrderComparison <- arrange(values.comparison,desc(distance),desc(comparison))
+    } else if (average.over=="time" & diagnostic!=2) {
 
-  } else if (average.over=="time" & diagnostic==2) {
-    labelled.input <- sub.input %>% mutate(comparison=paste(label.exposure,"(t-",distance,") vs ",label.covariate,"(t)",sep=""))
-	values.distance        <- unique(labelled.input$distance)
-	values.comparison      <- labelled.input %>% select(comparison,distance) %>% unique()
-	DescendOrderComparison <- arrange(values.comparison,desc(distance),desc(comparison))
+      labelled.input <- sub.input %>%
+        mutate(comparison=paste(label.covariate,"(t-",.data$distance,") vs ",label.exposure,"(t)",sep=""))
 
-  } else if (average.over=="distance" & diagnostic!=2) {
-    labelled.input <- sub.input %>% mutate(comparison=paste(label.covariate,"(t-",period.end,":","t-",period.start,") vs ",label.exposure,"(t)",sep=""),
-                                           comparison=ifelse(period.start==period.end,paste(label.covariate,"(t-",period.start,") vs ",label.exposure,"(t)",sep=""),comparison))
-	values.period.end      <- unique(labelled.input$period.end)
-	values.comparison      <- labelled.input %>% select(period.start,period.end,comparison) %>% unique()
-	DescendOrderComparison <- arrange(values.comparison,desc(period.end),desc(period.start),desc(comparison))
+      values.distance        <- unique(labelled.input$distance)
+      values.comparison      <- labelled.input %>% select(.data$comparison,.data$distance) %>% unique()
 
-  } else if (average.over=="distance" & diagnostic==2) {
-    labelled.input <- sub.input %>% mutate(comparison=paste(label.exposure,"(t-",period.end,":","t-",period.start,") vs ",label.covariate,"(t)",sep=""),
-                                           comparison=ifelse(period.start==period.end,paste(label.exposure,"(t-",period.start,") vs ",label.covariate,"(t)",sep=""),comparison))
-	values.period.end      <- unique(labelled.input$period.end)
-	values.comparison      <- labelled.input %>% select(period.start,period.end,comparison) %>% unique()
-	DescendOrderComparison <- arrange(values.comparison,desc(period.end),desc(period.start),desc(comparison))
-  }
+      DescendOrderComparison <- arrange(values.comparison,desc(.data$distance),desc(.data$comparison))
 
-  if (average.over=="time" | average.over=="distance" | is.null(average.over)) {
-    labelled.input <- labelled.input %>% mutate(comparison=factor(comparison,levels=DescendOrderComparison$comparison))
+      } else if (average.over=="time" & diagnostic==2) {
+
+        labelled.input <- sub.input %>% mutate(comparison=paste(label.exposure,"(t-",.data$distance,") vs ",label.covariate,"(t)",sep=""))
+
+        values.distance        <- unique(labelled.input$distance)
+        values.comparison      <- labelled.input %>% select(.data$comparison,.data$distance) %>% unique()
+
+        DescendOrderComparison <- arrange(values.comparison,desc(.data$distance),desc(.data$comparison))
+
+        } else if (average.over=="distance" & diagnostic!=2) {
+
+          labelled.input <- sub.input %>%
+            mutate(comparison=paste(label.covariate,"(t-",.data$period.end,":","t-",.data$period.start,") vs ",label.exposure,"(t)",sep=""),
+                   comparison=ifelse(.data$period.start==.data$period.end,paste(label.covariate,"(t-",.data$period.start,") vs ",label.exposure,"(t)",sep=""),.data$comparison))
+
+          values.period.end      <- unique(labelled.input$period.end)
+          values.comparison      <- labelled.input %>% select(.data$period.start,.data$period.end,.data$comparison) %>% unique()
+
+          DescendOrderComparison <- arrange(values.comparison,desc(.data$period.end),desc(.data$period.start),desc(.data$comparison))
+
+          } else if (average.over=="distance" & diagnostic==2) {
+
+            labelled.input <- sub.input %>%
+              mutate(comparison=paste(label.exposure,"(t-",.data$period.end,":","t-",.data$period.start,") vs ",label.covariate,"(t)",sep=""),
+                     comparison=ifelse(.data$period.start==.data$period.end,paste(label.exposure,"(t-",.data$period.start,") vs ",label.covariate,"(t)",sep=""),.data$comparison))
+
+            values.period.end      <- unique(labelled.input$period.end)
+            values.comparison      <- labelled.input %>% select(.data$period.start,.data$period.end,.data$comparison) %>% unique()
+
+            DescendOrderComparison <- arrange(values.comparison,desc(.data$period.end),desc(.data$period.start),desc(.data$comparison))
+
+            }
+
+  if (scope=="average" & (average.over=="time" | average.over=="distance" | is.null(average.over))) {
+
+    labelled.input <- labelled.input %>%
+      mutate(comparison=factor(.data$comparison,levels=DescendOrderComparison$comparison))
+
   }
 
 
   if ("E" %in% names(labelled.input)) {
-    labelled.input <- labelled.input %>% mutate(E=as.factor(E))
+    labelled.input <- labelled.input %>% mutate(E=as.factor(.data$E))
   } else {
     labelled.input <- labelled.input %>% mutate(E=as.factor(1))
   }
 
   if ("H" %in% names(labelled.input)) {
-    labelled.input <- labelled.input %>% mutate(H=as.factor(H))
+    labelled.input <- labelled.input %>% mutate(H=as.factor(.data$H))
   } else {
     labelled.input <- labelled.input %>% mutate(H=as.factor(1))
   }
@@ -2107,8 +2515,8 @@ makeplot <- function (input,
   if (groupvar=="none") {
 
   temp.plot <-
-    labelled.input %>% group_by(H,E) %>%
-    ggplot(aes(x=name.cov,y=plot.metric)
+    labelled.input %>% group_by(.data$H,.data$E) %>%
+    ggplot(aes_(x=quote(name.cov),y=quote(plot.metric))
     ) %>%
     + geom_point(size=point.size) %>%
     + coord_flip()	%>%
@@ -2117,8 +2525,8 @@ makeplot <- function (input,
   } else if (groupvar=="shape" && !is.null(shape) && shape=="exposure") {
 
     temp.plot <-
-      labelled.input %>% group_by(H) %>%
-      ggplot(aes(x=name.cov,y=plot.metric,shape=E)
+      labelled.input %>% group_by(.data$H) %>%
+      ggplot(aes_(x=quote(name.cov),y=quote(plot.metric),shape="E")
       ) %>%
       + geom_point(size=point.size) %>%
       + coord_flip()	%>%
@@ -2127,8 +2535,8 @@ makeplot <- function (input,
   } else if (groupvar=="shape" && !is.null(shape) && shape=="history") {
 
     temp.plot <-
-      labelled.input %>% group_by(E) %>%
-      ggplot(aes(x=name.cov,y=plot.metric,shape=H)
+      labelled.input %>% group_by(.data$E) %>%
+      ggplot(aes_(x=quote(name.cov),y=quote(plot.metric),shape="H")
       ) %>%
       + geom_point(size=point.size) %>%
       + coord_flip()	%>%
@@ -2137,24 +2545,24 @@ makeplot <- function (input,
    } else if (groupvar=="colour" && !is.null(colour) && colour=="exposure") {
 
     temp.plot <-
-      labelled.input %>% group_by(H) %>%
-      ggplot(aes(x=name.cov,y=plot.metric,colour=E)
+      labelled.input %>% group_by(.data$H) %>%
+      ggplot(aes_(x=quote(name.cov),y=quote(plot.metric),colour="E")
       ) %>%
       + geom_point(size=point.size) %>%
       + coord_flip()	%>%
       + ylim(lbound,ubound) %>%
-	  + scale_colour_manual(values=c("#E69F00", "#56B4E9", "#009E73", "#0072B2"),name="Treatment Group")#scale_colour_brewer(name=legend.title)
+	  + scale_colour_brewer(name=legend.title) #scale_colour_manual(values=c("#E69F00", "#56B4E9", "#009E73", "#0072B2"),name="...")#
 
   } else if (groupvar=="colour" && !is.null(colour) && colour=="history") {
 
     temp.plot <-
-      labelled.input %>% group_by(E) %>%
-      ggplot(aes(x=name.cov,y=plot.metric,colour=H)
+      labelled.input %>% group_by(.data$E) %>%
+      ggplot(aes(x=quote(name.cov),y=quote(plot.metric),colour="H")
       ) %>%
       + geom_point(size=point.size) %>%
       + coord_flip()	%>%
       + ylim(lbound,ubound) %>%
-	  + scale_colour_manual(values=c("#000000", "#E69F00", "#56B4E9", "#009E73", "#0072B2"),name="Treatment Group")#scale_colour_brewer(name=legend.title)
+	    + scale_colour_brewer(name=legend.title) #scale_colour_manual(values=c("#000000", "#E69F00", "#56B4E9", "#009E73", "#0072B2"),name="...")
 
   }
 
@@ -2179,6 +2587,7 @@ makeplot <- function (input,
     + geom_hline(yintercept=0,linetype="solid",colour=alpha("black",.5),size=zeroline.size) %>%
     + scale_x_discrete(limits=rev(sort(unique(input$name.cov)))) %>%
     + themes
+
 
   final.plot
 

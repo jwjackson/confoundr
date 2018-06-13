@@ -1,0 +1,191 @@
+---
+title: "confoundr demo"
+author: "John W. Jackson, Erin Schnellinger"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ConfoundR Vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+library(confoundr)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+#Overview
+
+Below, we provide an example in which we apply Diagnostic 3 to an artificial data set to 
+illustrate covariate balance for a time-varying exposure without censoring. 
+
+#Load example data and packages
+
+```{r}
+data("example_sml")
+```
+
+##Example: Diagnostic 3 for a time-varying exposure without censoring
+
+###PRELIMINARY STEP: MAKE EXPOSURE HISTORY
+
+##### Remove history for illustration. Note that the input data is already in wide format.
+
+```{r}
+drops <- c("h_0", "h_1", "h_2")
+mydata <- example_sml[ , !(names(example_sml) %in% drops)]
+
+mydata.history <- makehistory.one(input=mydata,
+                                  id="id",
+                                  exposure="a",
+                                  name.history="h",
+                                  times=c(0,1,2))
+```
+
+### STEP 1: RESTRUCTURE THE DATA
+
+```{r}
+mydata.tidy <- lengthen(
+  input=example_sml, #mydata.history,
+  id="id",
+  diagnostic=3,
+  censoring="no",
+  times.exposure=c(0,1,2),
+  times.covariate=c(0,1,2),
+  exposure="a",
+  temporal.covariate=c("l","m","o"),
+  static.covariate=c("n","p"),
+  history="h",
+  weight.exposure="wax"
+)
+```
+
+### Example of how to remove relative covariate history
+
+```{r}
+mydata.tidy.omit <- omit.history(
+  input=mydata.tidy,
+  omission="relative",
+  covariate.name=c("l","m","o"),
+  distance=1
+  )
+```
+
+
+### STEP 2: CREATE BALANCE TABLE 
+
+```{r}
+mytable <- balance (
+input=mydata.tidy.omit,
+diagnostic=3,
+approach="weight", 
+censoring="no",
+scope="all",
+times.exposure=c(0,1,2),
+times.covariate=c(0,1,2),
+exposure="a",
+history="h",
+weight.exposure="wax",
+ignore.missing.metric="no",
+sort.order= c("l","m","o","n","p")
+)
+```
+
+### STEP 3: PLOT BALANCE METRIC
+
+```{r}
+myplot <- makeplot (
+input=mytable,	
+diagnostic	=3,
+approach="weight",
+scope="all",
+metric="SMD"
+)
+```
+
+
+### Display the plot
+
+```{r}
+myplot
+```
+
+### STEP 4: SAVE BALANCE TABLE AND PLOT
+
+```
+write.csv(mytable,paste(path,"mytable.csv",sep=""))
+ggsave(filename=paste(path,"myplot.pdf",sep=""))
+```
+##Example of Regression Approach for Diagnostic 1
+
+Now, we illustrate how Diagnostic 1 can be implemented using a regression approach. 
+
+### Create tidy dataset
+
+```{r}
+mydata.tidy <- lengthen(
+  input=mydata.history,
+  diagnostic=1,
+  censoring="no",
+  id="id",
+  times.exposure=c(0,1,2),
+  times.covariate=c(0,1,2),
+  exposure="a",
+  temporal.covariate=c("l","m","n","o","p"),
+  history="h"
+)  
+
+head(mydata.tidy)
+
+```
+
+Notice that lengthen has already subset the data appropriately for diagnostic 1, where at any time $t$ covariates are measured at or before exposure. We could use `omit.history()` to further restrict to the same measurement times for exposures and covariates.
+
+### Make a balance table using `lengthen()` and regression models
+
+```{r}
+
+library(dplyr)
+library(broom)
+
+mydata.tidy.reg <- mutate(mydata.tidy,
+                          time=time.exposure,
+                          distance=time.exposure-time.covariate,
+                          history=h)
+
+output <- mydata.tidy.reg %>% 
+  group_by(name.cov) %>% #note, you can include other stratifying variables here or in the model
+    filter(time.exposure>=time.covariate) %>% #lengthen actually arealdy took care of this, provided here for clarity
+      do(tidy(lm(formula=value.cov~a+time+distance+history,.))) %>% #same model form used for every covariate
+        filter(term=="a") %>% ungroup()
+
+table.reg <- output %>% 
+               select(name.cov,estimate) %>% 
+                 rename(D=estimate)
+
+print(table.reg)
+```
+
+### Compare that to a balance table via direct calculation & standardization
+
+```{r}
+
+table.std <- balance(input=mydata.tidy,
+  diagnostic=1,
+  approach="none",
+  censoring="no",
+  scope="average",
+  average.over="distance",
+  ignore.missing.metric="no",
+  times.exposure=c(0,1,2),
+  times.covariate=c(0,1,2),
+  exposure="a",
+  history="h"
+) 
+
+print(table.std)
+```
+

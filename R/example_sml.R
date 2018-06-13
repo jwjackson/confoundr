@@ -1,4 +1,4 @@
-#' Artifical data set used to illustrate the functionality of confoundR.
+#' Artifical data set used to illustrate the functionality of confoundr.
 #'
 #' The example_sml data set contains 10,000 records and 38
 #' variables. These variables include time-varying exposures,
@@ -40,15 +40,15 @@
 #'
 #'     \item{wa_0}{inverse probability of exposure weight at time 0}
 #'     \item{wa_1}{inverse probability of exposure weight at time 1}
-#'     \item{wa_2}{joint inverse probability of exposure and censoring weight at time 2}
+#'     \item{wa_2}{inverse probability of exposure weight at time 2}
 #'
-#'     \item{wax_0}{joint inverse probability of exposure and censoring weight at time 0}
-#'     \item{wax_1}{joint inverse probability of exposure and censoring weight at time 1}
-#'     \item{wax_2}{joint inverse probability of exposure weight at time 2}
+#'     \item{wax_0}{cumulative inverse probability weight of exposure at time 0}
+#'     \item{wax_1}{cumulative inverse probability weight of exposure at time 1}
+#'     \item{wax_2}{cumulative inverse probability weight of exposure at time 2}
 #'
-#'     \item{wsx_0}{inverse probability of censoring weight at time 0}
-#'     \item{wsx_1}{inverse probability of censoring weight at time 1}
-#'     \item{wsx_2}{inverse probability of censoring weight at time 2}
+#'     \item{wsx_0}{cumulative inverse probability of censoring weight at time 0}
+#'     \item{wsx_1}{cumulative inverse probability of censoring weight at time 1}
+#'     \item{wsx_2}{cumulative inverse probability of censoring weight at time 2}
 #'
 #'     \item{e5_0}{propensity score strata at time 0}
 #'     \item{e5_1}{propensity score strata at time 1}
