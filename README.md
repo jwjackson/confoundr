@@ -13,7 +13,7 @@ This software implements three [diagnostics for confounding/selection-bias](http
 CAPABILITIES
 
 The tools can accommodate:
-* Multivariate exposures that are binary or categorical (and continuous, when used in concert with modeling, see below). 
+* Multivariate exposures that are binary or categorical (and continuous, when used in concert with modeling). 
 * Varying temporal depth of covariate history.
 * Unbalanced, sparse data with irregular measurement of exposures/covariates or missing data
 * Artificial censoring rules.
