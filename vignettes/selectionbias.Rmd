@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 #INTRODUCTION
 
-This software implements three [diagnostics for confounding/selection-bias](https://www.ncbi.nlm.nih.gov/pubmed/27479649) that can be used in sequence. Built upon the framework of sequential exchangeability, these apply to any study of multivariate exposures e.g. time-varying exposures, direct effects, interaction, and censoring. The first two diagnostics pertain to the nature of confounding/selection-bias in the data, while the third is meant to examine residual confounding/selection-bias after applying certai adjustment methods. These tools are meant to help describe confounding/selection-bias in complex data _after_ investigators have selected covariates to adjust for (e.g., through subject-matter knowledge).
+This software implements three [diagnostics for confounding/selection-bias](https://www.ncbi.nlm.nih.gov/pubmed/27479649) that can be used in sequence. Built upon the framework of sequential exchangeability, these apply to any study of multivariate exposures e.g. time-varying exposures, direct effects, interaction, and censoring. The first two diagnostics pertain to the nature of confounding/selection-bias in the data, while the third is meant to examine residual confounding/selection-bias after applying certain adjustment methods. These tools are meant to help describe confounding/selection-bias in complex data _after_ investigators have selected covariates to adjust for (e.g., through subject-matter knowledge).
 
 + *Diagnostic 1* is a generalization of a "Table 1" for multivariate exposures (i.e. multiple exposures that are distinct in timing or character). It examines whether the prior covariate means are the same across exposure groups, among persons who have followed a particular exposure trajectory up to that point in time. Like a "Table 1" it is meant to describe whether exposure groups have different distributions of prior covariates. 
 
@@ -28,7 +28,7 @@ This software implements three [diagnostics for confounding/selection-bias](http
 
 #CAPABILITIES
 
-The tools can accomodate:
+The tools can accommodate:
 
 + Multivariate exposures that are binary or categorical (and continuous, when used in concert with modeling, see below). 
 
@@ -80,7 +80,7 @@ Let's load the data from our simulated trial:
 data("catie_sim")
 ```
 
-In this simulated trial, we have five treatment arms, with measures of symptom response, patient-reported outcomes, and history of treatment change, measured monthly or quarterly over 18 months (i.e., 0,1,3,6,9,12,15,18). We assume that, at each follow-up visit, study dropout is missing at random given these the most recent measures, the treatment arm, and baseline covariates among those who have remained in the study. Here is a description of some baseline covariates:
+In this simulated trial, we have five treatment arms, with measures of symptom response, patient-reported outcomes, and history of treatment change, measured monthly or quarterly over 18 months (i.e., 0,1,3,6,9,12,15,18). We assume that, at each follow-up visit, study dropout is missing at random given the most recent measures, the treatment arm, and baseline covariates among those who have remained in the study. Here is a description of some baseline covariates:
 
 ```{r}
 catie_sim %>% filter(time==0) %>% select(starts_with("age.grp."),white,black,other,exacer,unemployed,starts_with("site")) %>% summarize_all("mean")
@@ -103,7 +103,7 @@ catie_sim %>% group_by(time) %>% select(Chg.pansstotal,cs14,cs16,calg1,epsmean,q
 + phase.change.cum: Number of treatment changes
 + studydisc: Study dropout by time $t+1$
 
-Before we begin, a few clairfying points about this example may be helpful. Our use of the diagnostics in this example is akin to assessing covariate balance across levels of study dropout. That is, we are treating study dropout as an exposure. The sticky point here is that we define study dropout as equal to `1` at the last visit and `0` at all times before. This means that we are actually evaluating censoring due to study dropout at time $t+1$, indexed at time $t$, as is done in most applied studies that use inverse probability of censoring weights. 
+Before we begin, a few clarifying points about this example may be helpful. Our use of the diagnostics in this example is akin to assessing covariate balance across levels of study dropout. That is, we are treating study dropout as an exposure. The sticky point here is that we define study dropout as equal to `1` at the last visit and `0` at all times before. This means that we are actually evaluating censoring due to study dropout at time $t+1$, indexed at time $t$, as is done in most applied studies that use inverse probability of censoring weights. 
 
 Now let us proceed with our first step, to use Diagnostic 1 to describe the selection-bias in the data, e.g., how the covariates are _not_ missing completely at random over time (that is, showing that censoring due to dropout depends at least on measured covariates).
 
@@ -116,7 +116,7 @@ Our data formats should obey the following conventions:
 + A common referent value--to which balance metrics will compare all other levels--should be coded as the lowest value
 + In our examples, we have two exposures. The first is treatment assignment, `treat.grp`. It is coded numerically as one variable, with the numbers indicating treatment arm at baseline. The second exposure is censoring due to study dropout, `studydisc`, which equals $1$ at a participant's last visit when they exit the study prematurely, and $0$ otherwise.
 *Covariates
-+ All cateogrical exposures should be broken up into numeric indicator variables.
++ All categorical exposures should be broken up into numeric indicator variables.
 
 For example, here is a snapshot of our example data (e.g., the simulated person CATIEID=1440 who dropped out after completing three study visits:
 
@@ -143,7 +143,7 @@ catie_sim.w <- widen(
 glimpse(catie_sim.w %>% select(CATIEID,starts_with("treat.grp"),starts_with("studydisc"),starts_with("pct.gain")) %>% filter(CATIEID==1440))
 ```
 
-In this wide dataset, each variable measurement appears as its own variable, indexed by time (e.g., `var_0, var_1, var_3, var_6, ...`), including static covariates that are measured at baseline and do not change over time. Generally, any scheme can be used to index time (e.g., `var_0, var_1, var_2, ...`) and it could be arbitrarily different for each covariate, supporting heteroteneous covariate measurement schedules as is common in clinical trial and cohort studies.
+In this wide dataset, each variable measurement appears as its own variable, indexed by time (e.g., `var_0, var_1, var_3, var_6, ...`), including static covariates that are measured at baseline and do not change over time. Generally, any scheme can be used to index time (e.g., `var_0, var_1, var_2, ...`) and it could be arbitrarily different for each covariate, supporting heterogeneous covariate measurement schedules as is common in clinical trial and cohort studies.
 
 There is one more housekeeping task. If we wish to obtain balance diagnostics that adjust for prior exposure history, or for a categorical baseline variable, we can use the `makehistory.one()` or (`makehistory.two()`) function to create these measures in the "wide" dataset. This will create a variable that describes exposure history through time $t-1$, indexed at time $t$, possibly stratified by a baseline covariate measurement. In our example, we want to first compare covariate balance across treatment arms. Because this exposure is static, it needs no history variable. We also want to compare at each time $t$ the censored vs. the uncensored, among those in the same treatment arm who have remained uncensored before time $t$. Thus, we need a history variable for censoring that tells us which treatment arm they belong to, and summarizes their censoring history. 
 
@@ -161,7 +161,7 @@ catie_sim.wh <- makehistory.two(
 )
 glimpse(catie_sim.wh %>% select(CATIEID,starts_with("pct.gain"),starts_with("treat.grp"),starts_with("studydisc"),starts_with("ht"),starts_with("hs")) %>% filter(CATIEID==1440))
 ```
-In our example, we can ignore the treatment arm history variables "ht" that `makehistory.two()` created since treatment arm is fixed throughout the study. Note that the `makehistory.one()` and  `make.history.two()` functions allow users to stratify history variables by a baseline covariate via the `gourp` argument. It should never be used for a true exposure, as doing so would inaccurately classify any persons who intermittently miss visits throughout the study.
+In our example, we can ignore the treatment arm history variables "ht" that `makehistory.two()` created since treatment arm is fixed throughout the study. Note that the `makehistory.one()` and  `make.history.two()` functions allow users to stratify history variables by a baseline covariate via the `group` argument. It should never be used for a true exposure, as doing so would inaccurately classify any persons who intermittently miss visits throughout the study.
 
 ### STEP 2: CREATE A TIDY DATAFRAME
 
@@ -191,13 +191,13 @@ You should notice that `lengthen()` has produced a tidy dataframe where, for dia
 
 ####Omitting covariate history
 
-We can use `omit.history()` to ensure that our balance evaluations accord with our assumption that, at each follow-up visit, study dropout is missing at random given these the most recent measures of time-varying covariates, the treatment arm, and baseline covariates. The `omit.history()` function requires that users specify the covariates to be modified (via the `covariate` argument), and how they want to remove irrelevant covariate history (via the `omission` argument). There are three types of omissions that can be specified:
+We can use `omit.history()` to ensure that our balance evaluations accord with our assumption that, at each follow-up visit, study dropout is missing at random given the most recent measures of time-varying covariates, the treatment arm, and baseline covariates. The `omit.history()` function requires that users specify the covariates to be modified (via the `covariate` argument), and how they want to remove irrelevant covariate history (via the `omission` argument). There are three types of omissions that can be specified:
 
 * `"fixed"`: sets covariate values to missing for certain measurement times $t$ (specified in the `times` argument). For example, we might use this for covariate "l" at time 2 to set all data on "l" at time 2 to missing, regardless of the exposure measurement time. 
 
 * `"relative"`: sets covariate values to missing only for covariate measurement times at or before a certan distance $k$ from the exposure measurement times (specified in `distance` argument). For example, we might use this to set data for covariate "l" with distance 2 to missing data only when it is measured two units or more before the exposure measurement time (i.e. $t-2, t-3, t-4$ and so on).
 
-* `"same.time"`: sets covariate values to missing only for covariate measurement times that align with exposure measurement times (no additional argument needed). This can be useful for when, at any given time, an exposure precedes a particular covariate.
+* `"same.time"`: sets covariate values to missing only for covariate measurement times that align with exposure measurement times (no additional argument needed). This can be useful when, at any given time, an exposure precedes a particular covariate.
 
 ```{r}
 catie_sim.whlo1 <- omit.history(
@@ -224,10 +224,10 @@ We also have to specify the `scope` through which we will examine person-time.
 + `"values"` averages over strata, non-referent exposure values within levels of history, time, and distance
 + `"history"` averages over strata, non-referent exposure values and history within levels of time and distance
 + `time` averages over strata, non-referent exposure values, history, and time within levels of distance
-+ `distance` averages over non-referent exposure values, history, time and distance. If desired, once can use the additional arguemnt `periods` to average over segmented pools of distance, as shown later on.
++ `distance` averages over non-referent exposure values, history, time and distance. If desired, once can use the additional argument `periods` to average over segmented pools of distance, as shown later on.
 * `"recent"` provides balance metrics only for a chosen distance $k$ (specified with the additional argument 'recency'). Specifying a `scope="recent"` with `recency=0` is a quick way to assess balance for the most recent covariate measurements. 
 
-There are optional arugments that can help us cope with sparse data. For example, in our example, we can optionally specify `sd.ref` to calculate the standardized mean difference using the covaraite standard deviation from the uncensored at time $t$ given censoring history (the default uses the corresponding pooled estimate). If we were taking averages over person-time, we can use `ignore.missing.metric` to decide whether or not to report standardize mean differences when some dimensions of person-time lack variation in a covariate (or cases where everyone or no one is censored given history).
+There are optional arguments that can help us cope with sparse data. For example, in our example, we can optionally specify `sd.ref` to calculate the standardized mean difference using the covariate standard deviation from the uncensored at time $t$ given censoring history (the default uses the corresponding pooled estimate). If we were taking averages over person-time, we can use `ignore.missing.metric` to decide whether or not to report standardized mean differences when some dimensions of person-time lack variation in a covariate (or cases where everyone or no one is censored given history).
 
 For our example, in line with our assumptions, let us examine balance for the most recent covariates:
 
@@ -248,7 +248,7 @@ baltbl1 <- balance(
 print(baltbl1 %>% filter(name.cov=="pct.gain" & time.exposure<=6) %>% mutate_at(c("D","SMD"),round,3))
 ```
 
-In the table produced by `balance()`, `E` is the exposure value that the referent value is compared to, `H` is the exposure history. The exact format of the output table will depend on the arguments supplied to `balance()`. There are two reasons for this. The first reason is that diagnostics 1, 2, and 3 differ in when they require exposure history `H` and strata `S` (see below for more details), and these variables will only appear when they have been used to adjust the balance estimate. The second reason is kicks in when using `scope="average` and `average.over=...` to request balance estimates that average over some dimension of persion-time.
+In the table produced by `balance()`, `E` is the exposure value that the referent value is compared to, `H` is the exposure history. The exact format of the output table will depend on the arguments supplied to `balance()`. There are two reasons for this. The first reason is that diagnostics 1, 2, and 3 differ in when they require exposure history `H` and strata `S` (see below for more details), and these variables will only appear when they have been used to adjust the balance estimate. The second reason kicks in when using `scope="average` and `average.over=...` to request balance estimates that average over some dimension of persion-time.
 
 ###STEP 4: CREATE A COVARIATE BALANCE PLOT
 
@@ -267,7 +267,7 @@ balplot1 <-makeplot(
 balplot1
 ```
 
-This plot shows the standardized mean difference (x-axis) for each covariate (y-axis) at different pairings of dropout and covariate measurment times (panels), among the uncensored in each treatment arm (dots). This plot portrays our decision to restricted our pairing of times to those where covariates are measured just prior to dropout. We see here that several covariates are strongly associated with dropout over time, with standarized mean differences much larger than 0.25 (the chosen reference lines).
+This plot shows the standardized mean difference (x-axis) for each covariate (y-axis) at different pairings of dropout and covariate measurement times (panels), among the uncensored in each treatment arm (dots). This plot portrays our decision to restrict our pairing of times to those where covariates are measured just prior to dropout. We see here that several covariates are strongly associated with dropout over time, with standarized mean differences much larger than 0.25 (the chosen reference lines).
 
 The plot produced by `makeplot()` will vary according to the parameters, which should share those used with `balance()`. For example, if we had used `scope="all"` with `balance()` and `makeplot()`, this would have arrayed the dropout and measurment parings across a two-dimensional grid, where panel columns correspond to covariate measurement times and panel rows correspond to dropout times. Such displays are useful for distinguishing balance of "static" covariates that do not vary over time from "temporal" covariates that do (as shown below). Sometimes, it is not possible to estimate certain balance metrics due to lack of variation, as would happen if everyone dropped out or shared the same covariate value. When this happens, `makeplot()` will warn you about how many balance estimates are missing from the plot. You can identify these data elements in the balance table where their balance estimates will have missing values.
 
@@ -279,9 +279,9 @@ We can use optional arguments in `makeplot()` to produce a publication-quality p
 
 ###DEMONSTRATION OF DIAGNOSTIC 3
 
-We have seen with diagnostic 1 that there is dependent-censoring over time. That is, study dropout is associated with measured covariates. Suppose we wish to remove dependent-censoring by using inverse probability of censoring weights to balance these covariates across levels of study dropout. We can use diagnostic 3 to examine how well our estimated weights accomplish this task. For demonstration purposes, we are going to pursue a different plot that incorporate balance across static covariates measured at baseline, using a limited selection of times to keep the plot readable.
+We have seen with diagnostic 1 that there is dependent-censoring over time. That is, study dropout is associated with measured covariates. Suppose we wish to remove dependent-censoring by using inverse probability of censoring weights to balance these covariates across levels of study dropout. We can use diagnostic 3 to examine how well our estimated weights accomplish this task. For demonstration purposes, we are going to pursue a different plot that incorporates balance across static covariates measured at baseline, using a limited selection of times to keep the plot readable.
 
-To start, we return to our widened dataset and transform it to a tidy dataset under diagnostic 3. The call differs from before only in that we have added two extra arguments `static.covariate` and `weight.exposure`. (If we had specified these for diagnostic 1, we wouldn't need to reproduce a tidy dataset, because it will share the same structure for diagnostics 1 and 3). 
+To start, we return to our widened dataset and transform it to a tidy dataset under diagnostic 3. The call differs from before only in that we have added two extra arguments, `static.covariate` and `weight.exposure`. (If we had specified these for diagnostic 1, we wouldn't need to reproduce a tidy dataset, because it will share the same structure for diagnostics 1 and 3). 
 
 ```{r}
 catie_sim.whl3 <- lengthen(
@@ -354,17 +354,17 @@ balplot3
 
 We see in this plot that the weights have effectively reduced much of the imbalance for most covariates, at least through time 6. However, we also see that strong imbalances persist for other covariates at certain time points and treatment arms, a potential signal that our model for study dropout  [is not flexible enough](https://www.ncbi.nlm.nih.gov/pubmed/?term=19675141), or that other issues, such as positivity violations at play. Imbalances can also persist when inverse probability weights are [truncated to certain thresholds](https://www.ncbi.nlm.nih.gov/pubmed/?term=18682488). The plot is also informative in that we see persistent imbalances across baseline covariates as well. This is to be expected as these variables were used to stabilize the weights. This re-emphasizes the need to condition our final analyses on these baseline covariates.
 
-A natural question is whether we can produce plots that adjust for baseline covariates. There are two options. If there are only a few such covariates and these can be combined into a master categorical variable, this variable can be wrapped into the history strata using either `makehistory()` function. Averaging over history with `balance()` will then adjust for this categorical variable. The alternative is to merge baseline covariates to the tidy dataset produced by `lengthen()`, and then `broom` package to produce balance estimates that adjust for multiple covariates, even continuous ones. If the output were reformatted appropriately, it could be plotted with `makeplot()` or with `ggplot2`  or `lattice` directly. This latter extension with modeling has not yet been automated into the software.
+A natural question is whether we can produce plots that adjust for baseline covariates. There are two options. If there are only a few such covariates and these can be combined into a master categorical variable, this variable can be wrapped into the history strata using either `makehistory()` function. Averaging over history with `balance()` will then adjust for this categorical variable. The alternative is to merge baseline covariates to the tidy dataset produced by `lengthen()`, and then use the `broom` package to produce balance estimates that adjust for multiple covariates, even continuous ones. If the output were reformatted appropriately, it could be plotted with `makeplot()` or with `ggplot2`  or `lattice` directly. This latter extension with modeling has not yet been automated into the software.
 
 In all, assessments such as diagnostics 1 and 3 can be critical for describing the nature of time-varying confounding, and also selection-bias as we have demonstrated in this example. These assessments are certainly of use to investigators who can examine such issues and adapt their modeling approaches accordingly. Next, we turn to diagnostic 2, which tells us even more about the nature of time-varying confounding and/or selection-bias in complex longitudinal data.
 
 ###DEMONSTRATION OF DIAGNOSTIC 2
 
-In addition to describing selection-bias before and after applying inverse probability of censoring weights, we can also examine whether covariates are affected by exposure or an unmeasured cause of exposure. If it were present, conditioning on covariates during follow-up would not only potentially block treatment effects, conditioning would induce selection-bias, and so would not be a desirable approach for resolving the selectionb-bias. Treatment-confounder feedback motivates the use of inverse probability of censoring weights, or a time-varying application of multiple imputation, to resolve the selection-bias. 
+In addition to describing selection-bias before and after applying inverse probability of censoring weights, we can also examine whether covariates are affected by exposure or an unmeasured cause of exposure. If it were present, conditioning on covariates during follow-up would not only potentially block treatment effects, conditioning would induce selection-bias, and so would not be a desirable approach for resolving the selection-bias. Treatment-confounder feedback motivates the use of inverse probability of censoring weights, or a time-varying application of multiple imputation, to resolve the selection-bias. 
 
 To evaluate treatment-confounder feedback, we simply assess the balance of each covariate measurement across each prior exposure measurement, adjusting for confounders that precede the exposure. Thankfully, we can use the same functions (and thus workflow) as before to produce a plot that describes treatment-confounder feedback. Recall that, in our study design, treatment arm is held fixed throughout the study. As a result, the plot will be much simpler than it would be if we wanted to evaluate feedback for a treatment that varied over time. Moreover, because the treatment arm assignment is randomized, there is no need to adjust for baseline covariates via adjustment with inverse probability weights or propensity score strata. In more general settings, we would need to indicate the root name of variables for (i) treatment history and inverse probability of treatment weights or (ii) propensity-score strata to adjust for prior treatment and covariate history that could confound this assessment. 
 
-In the presence of study dropout, as in our example, assessments of treatment-confounder can suffer selection-bias. To address this, we include the root name of `studydisc` and its corresponding inverse probability of censoring weights `wtr` after having lagged these variables to align with covariate measurements at time $t$ rather than time $t+1$ (as was the case, implicitly so, in this example). 
+In the presence of study dropout, as in our example, assessments of treatment-confounder feedback can suffer selection-bias. To address this, we include the root name of `studydisc` and its corresponding inverse probability of censoring weights `wtr` after having lagged these variables to align with covariate measurements at time $t$ rather than time $t+1$ (as was the case, implicitly so, in this example). 
 
 ```{r}
 catie.alt <- catie_sim %>%
@@ -451,13 +451,13 @@ balplot2 <- makeplot(
 balplot2
 ```
 
-In this plot, each panel represents the average balance of a covariate at time $t$ across levels of the treatment arm at baseline (at $t=0$). We only see one dot because, `balance()` first computed metrics comparing each non-referent value to a refernt value, took a weighted average of these, and then further took weighted averages according to the spacing between treatment arm and covariate measurements. We see that at near and distant intervals, the change in pansstotal score, and the percentage of weight gain, appears to differ across treatment arms. Because this is a randomized study, we do not expect these differences  to be attributable to confounding by baseline covariates. Moreover, we have reduced the contribution of selection-bias by incorporating inverse probability of censoring weights. Therefore, it appears that both change in total PANSS score and percentage of weight gain is involved in treatment-confounder feedback.
+In this plot, each panel represents the average balance of a covariate at time $t$ across levels of the treatment arm at baseline (at $t=0$). We only see one dot because, `balance()` first computed metrics comparing each non-referent value to a referent value, took a weighted average of these, and then further took weighted averages according to the spacing between treatment arm and covariate measurements. We see that at near and distant intervals, the change in pansstotal score, and the percentage of weight gain, appears to differ across treatment arms. Because this is a randomized study, we do not expect these differences  to be attributable to confounding by baseline covariates. Moreover, we have reduced the contribution of selection-bias by incorporating inverse probability of censoring weights. Therefore, it appears that both change in total PANSS score and percentage of weight gain is involved in treatment-confounder feedback.
 
 ##ITERATIVE PROCESSING FOR LARGE DATA
 
-One drawback of using a tidy datastructure to drive the functions is that, it may take substantial memory to process data from studies with a large number of persons, measurements, and/or covariates. To cope with this, we provide the `diagnose()` macro that takes the "wide" dataframe and iteratively calls `lengthen()` and `balance()` by looping over covariates. In the future we will extend this capability to allow for looping over measurement times as well. The output data from `diagnose()` can be read directly into `makeplot()`.
+One drawback of using a tidy data structure to drive the functions is that, it may take substantial memory to process data from studies with a large number of persons, measurements, and/or covariates. To cope with this, we provide the `diagnose()` macro that takes the "wide" dataframe and iteratively calls `lengthen()` and `balance()` by looping over covariates. In the future we will extend this capability to allow for looping over measurement times as well. The output data from `diagnose()` can be read directly into `makeplot()`.
 
-Note that there is an important change in workflow when users wish to use the `diagnose()` function and also remove irrelevant covariate history from the balance table calculations and plot. Users who wish to do so will need to first use `diagnsoe()` with `scope=all`. Then `omit.history()` can be applied to the dataset output by `diagnose()`. From that point, if desired, `apply.scope()` can be used to restrict to a certain recency or obtain summaries over person-time. This workflow change allows users to iterate while ensuring that the metrics ignore covariate history the user deems irrelevant to confounding.
+Note that there is an important change in workflow when users wish to use the `diagnose()` function and also remove irrelevant covariate history from the balance table calculations and plot. Users who wish to do so will need to first use `diagnsoe()` with `scope=all`. Then `omit.history()` can be applied to the dataset output from `diagnose()`. From that point, if desired, `apply.scope()` can be used to restrict to a certain recency or obtain summaries over person-time. This workflow change allows users to iterate while ensuring that the metrics ignore covariate history the user deems irrelevant to confounding.
 
 ```{r, fig.width=7, fig.height=5}
 diagtbl3 <- diagnose(
