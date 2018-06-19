@@ -34,7 +34,7 @@ The tools can accommodate:
 
 + Varying temporal depth of covariate history.
 
-+ Unbalanced, sparse data with irregular measurement of exposures/covariates or missing data
++ Unbalanced, sparse data with irregular measurement of exposures/covariates or missing data.
 
 + Artificial censoring rules.
 
@@ -116,7 +116,7 @@ Our data formats should obey the following conventions:
 * Exposures
      + A common referent value--to which balance metrics will compare all other levels--should be coded as the lowest value
      + In our examples, we have two exposures. The first is treatment assignment, `treat.grp`. It is coded numerically as one variable, with the numbers indicating treatment arm at baseline. The second exposure is censoring due to study dropout, `studydisc`, which equals $1$ at a participant's last visit when they exit the study prematurely, and $0$ otherwise.
-*Covariates
+* Covariates
      + All categorical exposures should be broken up into numeric indicator variables.
 
 For example, here is a snapshot of our example data (e.g., the simulated person CATIEID=1440 who dropped out after completing three study visits:
