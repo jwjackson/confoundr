@@ -70,7 +70,7 @@ library(confoundr)
 
 ##DEMONSTRATION OF DIAGNOSTIC 1
 
-Suppose we wished to evaluate the comparative effectiveness of five medications on reducing positive and negative symptoms scale in patients with schizophrenia. Our simulated data are loosely based on a large comparative effectiveness trial, the [CATIE Study](https://www.ncbi.nlm.nih.gov/pubmed/16172203), available from the [National Institutes of Mental Health](https://ndar.nih.gov/). Like many trials in this therapeutic area, it is plagued with high rates of dropout, and decisions to leave the study are sometimes informative of worsening symptom response. Such dropout can bias estimates of comparative effectiveness, [even when dropout rates are similar across arms]((https://www.ncbi.nlm.nih.gov/pubmed/?term=28535177). 
+Suppose we wished to evaluate the comparative effectiveness of five medications on reducing positive and negative symptoms scale in patients with schizophrenia. Our simulated data are loosely based on a large comparative effectiveness trial, the [CATIE Study](https://www.ncbi.nlm.nih.gov/pubmed/16172203), available from the [National Institutes of Mental Health](https://ndar.nih.gov/). Like many trials in this therapeutic area, it is plagued with high rates of dropout, and decisions to leave the study are sometimes informative of worsening symptom response. Such dropout can bias estimates of comparative effectiveness, [even when dropout rates are similar across arms](https://www.ncbi.nlm.nih.gov/pubmed/?term=28535177). 
 
 Inverse Probability of Censoring Weights are often used to correct such dropout under certain assumptions about the dropout process. For example, one might assume that the data censored by dropout are Missing at Random given most recent measures of covariates and the treatment arm. If the weights are estimated well, the weighted population will exhibit no association between measures of symptom response and later dropout over time. We will use the `confoundr` diagnostics to first describe these associations in the raw data, before weighting, and then after inverse probability weights have been applied.
 
@@ -110,13 +110,14 @@ Now let us proceed with our first step, to use Diagnostic 1 to describe the sele
 ### STEP 1: FORMAT THE DATAFRAME
 
 Our data formats should obey the following conventions:
+
 * All covariates should be numeric
 * Underscores should *not* appear in any variable root name. 
 * Exposures
-+ A common referent value--to which balance metrics will compare all other levels--should be coded as the lowest value
-+ In our examples, we have two exposures. The first is treatment assignment, `treat.grp`. It is coded numerically as one variable, with the numbers indicating treatment arm at baseline. The second exposure is censoring due to study dropout, `studydisc`, which equals $1$ at a participant's last visit when they exit the study prematurely, and $0$ otherwise.
+     + A common referent value--to which balance metrics will compare all other levels--should be coded as the lowest value
+     + In our examples, we have two exposures. The first is treatment assignment, `treat.grp`. It is coded numerically as one variable, with the numbers indicating treatment arm at baseline. The second exposure is censoring due to study dropout, `studydisc`, which equals $1$ at a participant's last visit when they exit the study prematurely, and $0$ otherwise.
 *Covariates
-+ All categorical exposures should be broken up into numeric indicator variables.
+     + All categorical exposures should be broken up into numeric indicator variables.
 
 For example, here is a snapshot of our example data (e.g., the simulated person CATIEID=1440 who dropped out after completing three study visits:
 
