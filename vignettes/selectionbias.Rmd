@@ -230,9 +230,9 @@ We also have to specify the `scope` through which we will examine person-time.
 
 + `"history"` averages over strata, non-referent exposure values and history within levels of time and distance
 
-+ `time` averages over strata, non-referent exposure values, history, and time within levels of distance
++ `"time"` averages over strata, non-referent exposure values, history, and time within levels of distance
 
-+ `distance` averages over non-referent exposure values, history, time and distance. If desired, once can use the additional argument `periods` to average over segmented pools of distance, as shown later on.
++ `"distance"` averages over non-referent exposure values, history, time and distance. If desired, once can use the additional argument `periods` to average over segmented pools of distance, as shown later on.
 
 * `"recent"` provides balance metrics only for a chosen distance $k$ (specified with the additional argument 'recency'). Specifying a `scope="recent"` with `recency=0` is a quick way to assess balance for the most recent covariate measurements. 
 
@@ -257,7 +257,7 @@ baltbl1 <- balance(
 print(baltbl1 %>% filter(name.cov=="pct.gain" & time.exposure<=6) %>% mutate_at(c("D","SMD"),round,3))
 ```
 
-In the table produced by `balance()`, `E` is the exposure value that the referent value is compared to, `H` is the exposure history. The exact format of the output table will depend on the arguments supplied to `balance()`. There are two reasons for this. The first reason is that diagnostics 1, 2, and 3 differ in when they require exposure history `H` and strata `S` (see below for more details), and these variables will only appear when they have been used to adjust the balance estimate. The second reason kicks in when using `scope="average` and `average.over=...` to request balance estimates that average over some dimension of persion-time.
+In the table produced by `balance()`, `E` is the exposure value that the referent value is compared to, `H` is the exposure history. The exact format of the output table will depend on the arguments supplied to `balance()`. There are two reasons for this. The first reason is that diagnostics 1, 2, and 3 differ in when they require exposure history `H` and strata `S` (see below for more details), and these variables will only appear when they have been used to adjust the balance estimate. The second reason kicks in when using `scope="average"` and `average.over="..."` to request balance estimates that average over some dimension of persion-time.
 
 ###STEP 4: CREATE A COVARIATE BALANCE PLOT
 
@@ -280,7 +280,7 @@ This plot shows the standardized mean difference (x-axis) for each covariate (y-
 
 The plot produced by `makeplot()` will vary according to the parameters, which should share those used with `balance()`. For example, if we had used `scope="all"` with `balance()` and `makeplot()`, this would have arrayed the dropout and measurment parings across a two-dimensional grid, where panel columns correspond to covariate measurement times and panel rows correspond to dropout times. Such displays are useful for distinguishing balance of "static" covariates that do not vary over time from "temporal" covariates that do (as shown below). Sometimes, it is not possible to estimate certain balance metrics due to lack of variation, as would happen if everyone dropped out or shared the same covariate value. When this happens, `makeplot()` will warn you about how many balance estimates are missing from the plot. You can identify these data elements in the balance table where their balance estimates will have missing values.
 
-We can use optional arguments in `makeplot()` to produce a publication-quality plot. See `?makeplot` for details. Once we are satisfied with the format, we can use `ggsave()` function from the ```ggplot2()``` package to save the plot as a PDF with a desired height and width. For example:
+We can use optional arguments in `makeplot()` to produce a publication-quality plot. See `?makeplot` for details. Once we are satisfied with the format, we can use `ggsave()` function from the `ggplot2()` package to save the plot as a PDF with a desired height and width. For example:
 
 ```
 #ggsave(balplot1,"balplot1.pdf",height=7.5,width=10,units="in")
@@ -373,7 +373,7 @@ In addition to describing selection-bias before and after applying inverse proba
 
 To evaluate treatment-confounder feedback, we simply assess the balance of each covariate measurement across each prior exposure measurement, adjusting for confounders that precede the exposure. Thankfully, we can use the same functions (and thus workflow) as before to produce a plot that describes treatment-confounder feedback. Recall that, in our study design, treatment arm is held fixed throughout the study. As a result, the plot will be much simpler than it would be if we wanted to evaluate feedback for a treatment that varied over time. Moreover, because the treatment arm assignment is randomized, there is no need to adjust for baseline covariates via adjustment with inverse probability weights or propensity score strata. In more general settings, we would need to indicate the root name of variables for (i) treatment history and inverse probability of treatment weights or (ii) propensity-score strata to adjust for prior treatment and covariate history that could confound this assessment. 
 
-In the presence of study dropout, as in our example, assessments of treatment-confounder feedback can suffer selection-bias. To address this, we include the root name of `studydisc` and its corresponding inverse probability of censoring weights `wtr` after having lagged these variables to align with covariate measurements at time $t$ rather than time $t+1$ (as was the case, implicitly so, in this example). 
+In the presence of study dropout, as in our example, assessments of treatment-confounder feedback can suffer selection-bias. To address this, we include the root name of `studydisc` and its corresponding inverse probability of censoring weights `wtr` after having lagged these variables to align with covariate measurements at time $t$ rather than time $t+1$ (as was the case, implicitly, in this example). 
 
 ```{r}
 catie.alt <- catie_sim %>%
