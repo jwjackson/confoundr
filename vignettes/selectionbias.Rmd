@@ -60,7 +60,7 @@ The analysis generally proceeds as follows (see below for examples):
 
 4. Create a trellised covariate balance plot using `makeplot()`.
 
-Let's go ahead and load the `confoundr`. We'll also load `dplyr` to hep present the results.
+Let's go ahead and load the `confoundr` package. We'll also load the `dplyr` package to hep present the results.
 
 ```{r}
 library(dplyr)
@@ -117,7 +117,7 @@ Our data formats should obey the following conventions:
      + A common referent value--to which balance metrics will compare all other levels--should be coded as the lowest value
      + In our examples, we have two exposures. The first is treatment assignment, `treat.grp`. It is coded numerically as one variable, with the numbers indicating treatment arm at baseline. The second exposure is censoring due to study dropout, `studydisc`, which equals $1$ at a participant's last visit when they exit the study prematurely, and $0$ otherwise.
 * Covariates
-     + All categorical exposures should be broken up into numeric indicator variables.
+     + All categorical covariates should be broken up into numeric indicator variables.
 
 For example, here is a snapshot of our example data (e.g., the simulated person CATIEID=1440 who dropped out after completing three study visits:
 
@@ -218,14 +218,22 @@ Because omit.history can be applied repeatedly to the dataset output from `lengt
 
 Now we are ready to use `balance()` to create a balance table comparing the censored to the uncensored over time. As was the case with `lengthen()` we have to specify what we want to do. The requirements vary (and are detailed further down) but at minimum we need to specify the `diagnostic` of interest, what `approach` is used to adjust the diagnostic (if any), whether or not additional `censoring` rules are to be applied, and the measurement times of interest for exposures and covariates.
 
-We also have to specify the `scope` through which we will examine person-time. 
+We also have to specify the `scope` through which we will examine person-time.
+
 * `"all"` provides balance metrics for each exposure-covariate time pairing in the tidy dataset.
+
 * `"average"` provides balance metrics that standardize over different dimensions of person-time. An additional argument, `average.over` is used to specify the dimension to be averaged over: 
+
 + `"strata"` averages over strata within levels of exposure values, history, time, and distance
+
 + `"values"` averages over strata, non-referent exposure values within levels of history, time, and distance
+
 + `"history"` averages over strata, non-referent exposure values and history within levels of time and distance
+
 + `time` averages over strata, non-referent exposure values, history, and time within levels of distance
+
 + `distance` averages over non-referent exposure values, history, time and distance. If desired, once can use the additional argument `periods` to average over segmented pools of distance, as shown later on.
+
 * `"recent"` provides balance metrics only for a chosen distance $k$ (specified with the additional argument 'recency'). Specifying a `scope="recent"` with `recency=0` is a quick way to assess balance for the most recent covariate measurements. 
 
 There are optional arguments that can help us cope with sparse data. For example, in our example, we can optionally specify `sd.ref` to calculate the standardized mean difference using the covariate standard deviation from the uncensored at time $t$ given censoring history (the default uses the corresponding pooled estimate). If we were taking averages over person-time, we can use `ignore.missing.metric` to decide whether or not to report standardized mean differences when some dimensions of person-time lack variation in a covariate (or cases where everyone or no one is censored given history).
