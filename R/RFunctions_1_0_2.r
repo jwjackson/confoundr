@@ -2268,9 +2268,10 @@ diagnose <- function (
 #' @param panel.spacing.size space between each panel in the plot (default = 0.75)
 #' @param axis.title main title for plot (optional)
 #' @param label.width width of labels in plot (default = 15)
-#' @param groupvar the type of grouping variable "shape" or "colour"
-#' @param shape the variable name to assign a shape scale
-#' @param colour the variable name to assign a color scale
+#' @param grouptype the type of grouping variable "shape" or "colour"
+#' @param shapetype the variable name to assign a shape scale, either "exposure" or "history"
+#' @param colourtype the variable name to assign a color scale, either "exposure" or "history"
+#' @param colour_palette the palette used for scale_brewer. "Set1" is the default. See documentation for scale_brewer for other options: https://ropensci.github.io/plotly/ggplot2/scale_brewer.html.
 #' @param legend.title title for legend (optional)
 #' @param legend.position position of legend (default = "bottom")
 #' @param text.legend text to include in legend (optional)
@@ -2326,13 +2327,13 @@ makeplot <- function (input,
                       panel.spacing.size=.75,
                       axis.title=NULL,
                       label.width=15,
-                      groupvar="none",
-                      shape=NULL,
-                      colour=NULL,
+                      grouptype="none",
+                      shapetype=NULL,
+                      colourtype=NULL,
+                      colour_palette="Set1",
                       legend.title="",
                       legend.position="bottom",
                       text.legend=NULL) {
-
 
   if(is.null(input)) {
     stop ("ERROR: 'input' is missing. Please specify the dataframe created by the balance() function")
@@ -2460,7 +2461,7 @@ makeplot <- function (input,
         labelled.input <- sub.input %>% mutate(comparison=paste(label.exposure,"(t-",.data$distance,") vs ",label.covariate,"(t)",sep=""))
 
         values.distance        <- unique(labelled.input$distance)
-        values.comparison      <- labelled.input %>% select(.data$comparison,.data$distance) %>% unique()
+        values.comparison      <- labelled.input %>% dplyr::select(.data$comparison,.data$distance) %>% unique()
 
         DescendOrderComparison <- arrange(values.comparison,desc(.data$distance),desc(.data$comparison))
 
@@ -2508,11 +2509,11 @@ makeplot <- function (input,
     labelled.input <- labelled.input %>% mutate(H=as.factor(1))
   }
 
-  if ((groupvar!="none" && groupvar=="shape" && is.null(shape)) | (groupvar!="none" && groupvar=="colour" && is.null(colour)))  {
+  if ((grouptype!="none" && grouptype=="shape" && is.null(shapetype)) | (grouptype!="none" && grouptype=="colour" && is.null(colourtype)))  {
   stop("When using groupvar='shape' please specify shape='exposure' or shape='history'; when using groupvar='colour' please specify colour='exposure' or colour='history'")
   }
 
-  if (groupvar=="none") {
+  if (grouptype=="none") {
 
   temp.plot <-
     labelled.input %>% group_by(.data$H,.data$E) %>%
@@ -2522,47 +2523,49 @@ makeplot <- function (input,
     + coord_flip()	%>%
     + ylim(lbound,ubound)
 
-  } else if (groupvar=="shape" && !is.null(shape) && shape=="exposure") {
-
-    temp.plot <-
-      labelled.input %>% group_by(.data$H) %>%
-      ggplot(aes_(x=quote(name.cov),y=quote(plot.metric),shape="E")
-      ) %>%
-      + geom_point(size=point.size) %>%
-      + coord_flip()	%>%
-      + ylim(lbound,ubound)
-
-  } else if (groupvar=="shape" && !is.null(shape) && shape=="history") {
+  } else if (grouptype=="shape" && !is.null(shapetype) && shapetype=="exposure") {
 
     temp.plot <-
       labelled.input %>% group_by(.data$E) %>%
-      ggplot(aes_(x=quote(name.cov),y=quote(plot.metric),shape="H")
-      ) %>%
-      + geom_point(size=point.size) %>%
-      + coord_flip()	%>%
-      + ylim(lbound,ubound)
-
-   } else if (groupvar=="colour" && !is.null(colour) && colour=="exposure") {
-
-    temp.plot <-
-      labelled.input %>% group_by(.data$H) %>%
-      ggplot(aes_(x=quote(name.cov),y=quote(plot.metric),colour="E")
+      ggplot(aes_(x=quote(name.cov),y=quote(plot.metric),shape=quote(E))
       ) %>%
       + geom_point(size=point.size) %>%
       + coord_flip()	%>%
       + ylim(lbound,ubound) %>%
-	  + scale_colour_brewer(name=legend.title) #scale_colour_manual(values=c("#E69F00", "#56B4E9", "#009E73", "#0072B2"),name="...")#
+      + scale_shape_discrete(name=legend.title)
 
-  } else if (groupvar=="colour" && !is.null(colour) && colour=="history") {
+  } else if (grouptype=="shape" && !is.null(shapetype) && shapetype=="history") {
 
     temp.plot <-
       labelled.input %>% group_by(.data$E) %>%
-      ggplot(aes(x=quote(name.cov),y=quote(plot.metric),colour="H")
+      ggplot(aes_(x=quote(name.cov),y=quote(plot.metric),shape=quote(H))
       ) %>%
       + geom_point(size=point.size) %>%
       + coord_flip()	%>%
       + ylim(lbound,ubound) %>%
-	    + scale_colour_brewer(name=legend.title) #scale_colour_manual(values=c("#000000", "#E69F00", "#56B4E9", "#009E73", "#0072B2"),name="...")
+      + scale_shape_discrete(name=legend.title)
+
+   } else if (grouptype=="colour" && !is.null(colourtype) && colourtype=="exposure") {
+
+    temp.plot <-
+      labelled.input %>% group_by(.data$E) %>%
+      ggplot(aes_(x=quote(name.cov),y=quote(plot.metric),colour=quote(E))
+      ) %>%
+      + geom_point(size=point.size) %>%
+      + coord_flip()	%>%
+      + ylim(lbound,ubound) %>%
+      + scale_colour_brewer(palette=colour_palette,name=legend.title)
+
+  } else if (grouptype=="colour" && !is.null(colourtype) && colourtype=="history") {
+
+    temp.plot <-
+      labelled.input %>% group_by(.data$H) %>%
+      ggplot(aes_(x=quote(name.cov),y=quote(plot.metric),colour=quote(H))
+      ) %>%
+      + geom_point(size=point.size) %>%
+      + coord_flip()	%>%
+      + ylim(lbound,ubound) %>%
+      + scale_colour_brewer(palette=colour_palette,name=legend.title)
 
   }
 

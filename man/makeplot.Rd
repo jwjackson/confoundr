@@ -11,8 +11,9 @@ makeplot(input, diagnostic, approach, metric = "SMD", censoring, scope,
   text.strip.y = 10, text.strip.x = 10, point.size = 0.75,
   zeroline.size = 0.1, refline.size = 0.1, refline.limit.a = -0.25,
   refline.limit.b = 0.25, panel.spacing.size = 0.75, axis.title = NULL,
-  label.width = 15, groupvar = "none", shape = NULL, colour = NULL,
-  legend.title = "", legend.position = "bottom", text.legend = NULL)
+  label.width = 15, grouptype = "none", shapetype = NULL,
+  colourtype = NULL, colour_palette = "Set1", legend.title = "",
+  legend.position = "bottom", text.legend = NULL)
 }
 \arguments{
 \item{input}{output from balance()}
@@ -67,11 +68,13 @@ makeplot(input, diagnostic, approach, metric = "SMD", censoring, scope,
 
 \item{label.width}{width of labels in plot (default = 15)}
 
-\item{groupvar}{the type of grouping variable "shape" or "colour"}
+\item{grouptype}{the type of grouping variable "shape" or "colour"}
 
-\item{shape}{the variable name to assign a shape scale}
+\item{shapetype}{the variable name to assign a shape scale, either "exposure" or "history"}
 
-\item{colour}{the variable name to assign a color scale}
+\item{colourtype}{the variable name to assign a color scale, either "exposure" or "history"}
+
+\item{colour_palette}{the palette used for scale_brewer. "Set1" is the default. See documentation for scale_brewer for other options: https://ropensci.github.io/plotly/ggplot2/scale_brewer.html.}
 
 \item{legend.title}{title for legend (optional)}
 
