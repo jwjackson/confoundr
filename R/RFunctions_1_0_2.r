@@ -2461,7 +2461,7 @@ makeplot <- function (input,
         labelled.input <- sub.input %>% mutate(comparison=paste(label.exposure,"(t-",.data$distance,") vs ",label.covariate,"(t)",sep=""))
 
         values.distance        <- unique(labelled.input$distance)
-        values.comparison      <- labelled.input %>% dplyr::select(.data$comparison,.data$distance) %>% unique()
+        values.comparison      <- labelled.input %>% select(.data$comparison,.data$distance) %>% unique()
 
         DescendOrderComparison <- arrange(values.comparison,desc(.data$distance),desc(.data$comparison))
 
@@ -2517,9 +2517,9 @@ makeplot <- function (input,
 
   temp.plot <-
     labelled.input %>% group_by(.data$H,.data$E) %>%
-    ggplot(aes_(x=quote(name.cov),y=quote(plot.metric))
+    ggplot(aes(x=name.cov,y=plot.metric)
     ) %>%
-    + geom_point(size=point.size) %>%
+    + geom_point(size=point.size,na.rm=TRUE) %>%
     + coord_flip()	%>%
     + ylim(lbound,ubound)
 
@@ -2527,31 +2527,31 @@ makeplot <- function (input,
 
     temp.plot <-
       labelled.input %>% group_by(.data$E) %>%
-      ggplot(aes_(x=quote(name.cov),y=quote(plot.metric),shape=quote(E))
+      ggplot(aes(x=name.cov,y=plot.metric,shape=E)
       ) %>%
-      + geom_point(size=point.size) %>%
+      + geom_point(size=point.size,na.rm=TRUE) %>%
       + coord_flip()	%>%
       + ylim(lbound,ubound) %>%
-      + scale_shape_discrete(name=legend.title)
+      + scale_shape_discrete(solid=F,name=legend.title)
 
   } else if (grouptype=="shape" && !is.null(shapetype) && shapetype=="history") {
 
     temp.plot <-
       labelled.input %>% group_by(.data$E) %>%
-      ggplot(aes_(x=quote(name.cov),y=quote(plot.metric),shape=quote(H))
+      ggplot(aes(x=name.cov,y=plot.metric,shape=H)
       ) %>%
-      + geom_point(size=point.size) %>%
+      + geom_point(size=point.size,na.rm=TRUE) %>%
       + coord_flip()	%>%
       + ylim(lbound,ubound) %>%
-      + scale_shape_discrete(name=legend.title)
+      + scale_shape_discrete(solid=F,name=legend.title)
 
    } else if (grouptype=="colour" && !is.null(colourtype) && colourtype=="exposure") {
 
     temp.plot <-
       labelled.input %>% group_by(.data$E) %>%
-      ggplot(aes_(x=quote(name.cov),y=quote(plot.metric),colour=quote(E))
+      ggplot(aes(x=name.cov,y=plot.metric,colour=E)
       ) %>%
-      + geom_point(size=point.size) %>%
+      + geom_point(size=point.size,na.rm=TRUE) %>%
       + coord_flip()	%>%
       + ylim(lbound,ubound) %>%
       + scale_colour_brewer(palette=colour_palette,name=legend.title)
@@ -2560,9 +2560,9 @@ makeplot <- function (input,
 
     temp.plot <-
       labelled.input %>% group_by(.data$H) %>%
-      ggplot(aes_(x=quote(name.cov),y=quote(plot.metric),colour=quote(H))
+      ggplot(aes(x=name.cov,y=plot.metric,colour=H)
       ) %>%
-      + geom_point(size=point.size) %>%
+      + geom_point(size=point.size,na.rm=TRUE) %>%
       + coord_flip()	%>%
       + ylim(lbound,ubound) %>%
       + scale_colour_brewer(palette=colour_palette,name=legend.title)
