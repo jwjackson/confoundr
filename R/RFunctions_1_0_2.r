@@ -2515,9 +2515,14 @@ makeplot <- function (input,
 
   if (grouptype=="none") {
 
+  quo_name.cov <-quote(name.cov)
+  quo_plot.metric <-quote(plot.metric)
+  quo_E <-quote(E)
+  quo_H <-quote(H)
+  
   temp.plot <-
     labelled.input %>% group_by(.data$H,.data$E) %>%
-    ggplot(aes(x=name.cov,y=plot.metric)
+    ggplot(aes(x=!! quo_name.cov,y=!! quo_plot.metric)
     ) %>%
     + geom_point(size=point.size,na.rm=TRUE) %>%
     + coord_flip()	%>%
@@ -2527,7 +2532,7 @@ makeplot <- function (input,
 
     temp.plot <-
       labelled.input %>% group_by(.data$E) %>%
-      ggplot(aes(x=name.cov,y=plot.metric,shape=E)
+      ggplot(aes(x=!! quo_name.cov,y=!! quo_plot.metric,shape=!! quo_E)
       ) %>%
       + geom_point(size=point.size,na.rm=TRUE) %>%
       + coord_flip()	%>%
@@ -2538,7 +2543,7 @@ makeplot <- function (input,
 
     temp.plot <-
       labelled.input %>% group_by(.data$E) %>%
-      ggplot(aes(x=name.cov,y=plot.metric,shape=H)
+      ggplot(aes(x=!! quo_name.cov,y=!! quo_plot.metric,shape=!! quo_H)
       ) %>%
       + geom_point(size=point.size,na.rm=TRUE) %>%
       + coord_flip()	%>%
@@ -2549,7 +2554,7 @@ makeplot <- function (input,
 
     temp.plot <-
       labelled.input %>% group_by(.data$E) %>%
-      ggplot(aes(x=name.cov,y=plot.metric,colour=E)
+      ggplot(aes(x=!! quo_name.cov,y=!! quo_plot.metric,colour=quo_E)
       ) %>%
       + geom_point(size=point.size,na.rm=TRUE) %>%
       + coord_flip()	%>%
@@ -2560,7 +2565,7 @@ makeplot <- function (input,
 
     temp.plot <-
       labelled.input %>% group_by(.data$H) %>%
-      ggplot(aes(x=name.cov,y=plot.metric,colour=H)
+      ggplot(aes(x=!! quo_name.cov,y=!! quo_plot.metric,colour=quo_H)
       ) %>%
       + geom_point(size=point.size,na.rm=TRUE) %>%
       + coord_flip()	%>%

@@ -7,10 +7,10 @@
 diagnose(input, diagnostic, approach = "none", scope, censoring, id,
   times.exposure, times.covariate, exposure, temporal.covariate,
   static.covariate = NULL, history = NULL, weight.exposure = NULL,
-  censor = NULL, weight.censor = NULL, strata = NULL, recency = NULL,
-  average.over = NULL, periods = NULL, list.distance = NULL,
-  sort.order = "alphabetical", loop = "no", ignore.missing.metric = "no",
-  metric = "SMD", sd.ref = "no")
+  censor = NULL, weight.censor = NULL, strata = NULL,
+  recency = NULL, average.over = NULL, periods = NULL,
+  list.distance = NULL, sort.order = "alphabetical", loop = "no",
+  ignore.missing.metric = "no", metric = "SMD", sd.ref = "no")
 }
 \arguments{
 \item{input}{restructured dataframe}

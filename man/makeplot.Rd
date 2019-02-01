@@ -10,10 +10,10 @@ makeplot(input, diagnostic, approach, metric = "SMD", censoring, scope,
   text.axis.title = 8, text.axis.y = 6.5, text.axis.x = 6.5,
   text.strip.y = 10, text.strip.x = 10, point.size = 0.75,
   zeroline.size = 0.1, refline.size = 0.1, refline.limit.a = -0.25,
-  refline.limit.b = 0.25, panel.spacing.size = 0.75, axis.title = NULL,
-  label.width = 15, grouptype = "none", shapetype = NULL,
-  colourtype = NULL, colour_palette = "Set1", legend.title = "",
-  legend.position = "bottom", text.legend = NULL)
+  refline.limit.b = 0.25, panel.spacing.size = 0.75,
+  axis.title = NULL, label.width = 15, grouptype = "none",
+  shapetype = NULL, colourtype = NULL, colour_palette = "Set1",
+  legend.title = "", legend.position = "bottom", text.legend = NULL)
 }
 \arguments{
 \item{input}{output from balance()}

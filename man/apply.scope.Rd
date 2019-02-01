@@ -4,10 +4,10 @@
 \alias{apply.scope}
 \title{Function to subset the output table from balance() or diagnose() to covariate balance metrics at a certain distance (e.g. a certain recency) or produce estimates that average over person-time.}
 \usage{
-apply.scope(input, diagnostic, approach, scope = "all", average.over = NULL,
-  periods = NULL, list.distance = NULL, recency = NULL,
-  sort.order = "alphabetical", ignore.missing.metric = "no",
-  metric = "SMD")
+apply.scope(input, diagnostic, approach, scope = "all",
+  average.over = NULL, periods = NULL, list.distance = NULL,
+  recency = NULL, sort.order = "alphabetical",
+  ignore.missing.metric = "no", metric = "SMD")
 }
 \arguments{
 \item{input}{dataframe output by diagnose() or balance() function}

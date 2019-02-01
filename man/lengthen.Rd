@@ -5,9 +5,9 @@
 \title{Function to create a "tidy" dataframe where the key observation is the paring of exposure and covariate measurement times}
 \usage{
 lengthen(input, diagnostic, censoring, id, times.exposure, times.covariate,
-  exposure, temporal.covariate, static.covariate = NULL, history = NULL,
-  weight.exposure = NULL, censor = NULL, weight.censor = NULL,
-  strata = NULL)
+  exposure, temporal.covariate, static.covariate = NULL,
+  history = NULL, weight.exposure = NULL, censor = NULL,
+  weight.censor = NULL, strata = NULL)
 }
 \arguments{
 \item{input}{dataframe in wide format}

@@ -26,8 +26,10 @@ To install the package, use the following code:
 ```
 install.packages("devtools",dependencies=TRUE)
 library(devtools)
-install_github("jwjackson/confoundr",dependencies=TRUE,build_vignettes=TRUE)
+install_github("jwjackson/confoundr",dependencies=c("Depends","Imports"), build = TRUE, build_opts = c("--no-resave-data", "--no-manual")
 ```
+
+install_github(...)
 
 To load the package, use the following code:
 

@@ -4,7 +4,8 @@
 \alias{omit.history}
 \title{Function to remove irrelevant covariate history from balance tables and plots}
 \usage{
-omit.history(input, omission, covariate.name, distance = NULL, times = NULL)
+omit.history(input, omission, covariate.name, distance = NULL,
+  times = NULL)
 }
 \arguments{
 \item{input}{restructured dataframe from lengthen()}
