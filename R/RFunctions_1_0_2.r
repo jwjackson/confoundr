@@ -2513,12 +2513,13 @@ makeplot <- function (input,
   stop("When using groupvar='shape' please specify shape='exposure' or shape='history'; when using groupvar='colour' please specify colour='exposure' or colour='history'")
   }
 
-  if (grouptype=="none") {
 
   quo_name.cov <-quote(name.cov)
   quo_plot.metric <-quote(plot.metric)
   quo_E <-quote(E)
   quo_H <-quote(H)
+  
+  if (grouptype=="none") {
   
   temp.plot <-
     labelled.input %>% group_by(.data$H,.data$E) %>%

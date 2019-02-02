@@ -60,3 +60,6 @@ A PDF manual can be found in the INST directory.
 For questions please [contact me](https://www.jhsph.edu/faculty/directory/profile/3410/john-w-jackson).
 
 John W. Jackson, ScD
+Assistant Professor
+Department of Epidemiology
+Johns Hopkins Bloomberg School of Public Health
