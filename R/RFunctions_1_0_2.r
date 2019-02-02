@@ -2531,7 +2531,7 @@ makeplot <- function (input,
   } else if (grouptype=="shape" && !is.null(shapetype) && shapetype=="exposure") {
 
     temp.plot <-
-      labelled.input %>% group_by(.data$E) %>%
+      labelled.input %>% group_by(.data$H) %>%
       ggplot(aes(x=!! quo_name.cov,y=!! quo_plot.metric,shape=!! quo_E)
       ) %>%
       + geom_point(size=point.size,na.rm=TRUE) %>%
@@ -2553,7 +2553,7 @@ makeplot <- function (input,
    } else if (grouptype=="colour" && !is.null(colourtype) && colourtype=="exposure") {
 
     temp.plot <-
-      labelled.input %>% group_by(.data$E) %>%
+      labelled.input %>% group_by(.data$H) %>%
       ggplot(aes(x=!! quo_name.cov,y=!! quo_plot.metric,colour=!! quo_E)
       ) %>%
       + geom_point(size=point.size,na.rm=TRUE) %>%
@@ -2564,7 +2564,7 @@ makeplot <- function (input,
   } else if (grouptype=="colour" && !is.null(colourtype) && colourtype=="history") {
 
     temp.plot <-
-      labelled.input %>% group_by(.data$H) %>%
+      labelled.input %>% group_by(.data$E) %>%
       ggplot(aes(x=!! quo_name.cov,y=!! quo_plot.metric,colour=!! quo_H)
       ) %>%
       + geom_point(size=point.size,na.rm=TRUE) %>%
