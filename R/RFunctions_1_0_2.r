@@ -2513,7 +2513,6 @@ makeplot <- function (input,
   stop("When using groupvar='shape' please specify shape='exposure' or shape='history'; when using groupvar='colour' please specify colour='exposure' or colour='history'")
   }
 
-
   quo_name.cov <-quote(name.cov)
   quo_plot.metric <-quote(plot.metric)
   quo_E <-quote(E)
@@ -2555,7 +2554,7 @@ makeplot <- function (input,
 
     temp.plot <-
       labelled.input %>% group_by(.data$E) %>%
-      ggplot(aes(x=!! quo_name.cov,y=!! quo_plot.metric,colour=quo_E)
+      ggplot(aes(x=!! quo_name.cov,y=!! quo_plot.metric,colour=!! quo_E)
       ) %>%
       + geom_point(size=point.size,na.rm=TRUE) %>%
       + coord_flip()	%>%
@@ -2566,7 +2565,7 @@ makeplot <- function (input,
 
     temp.plot <-
       labelled.input %>% group_by(.data$H) %>%
-      ggplot(aes(x=!! quo_name.cov,y=!! quo_plot.metric,colour=quo_H)
+      ggplot(aes(x=!! quo_name.cov,y=!! quo_plot.metric,colour=!! quo_H)
       ) %>%
       + geom_point(size=point.size,na.rm=TRUE) %>%
       + coord_flip()	%>%
