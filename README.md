@@ -29,7 +29,7 @@ library(devtools)
 install_github("jwjackson/confoundr",
                dependencies=c("Depends","Imports"), 
                build = TRUE, 
-               build_opts = c("--no-resave-data","--no-manual")
+               build_opts = c("--no-resave-data","--no-manual"))
 ```
 To load the package, use the following code:
 
