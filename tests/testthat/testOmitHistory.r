@@ -149,8 +149,8 @@ test_that("preserve name.cov format",{
     static.covariate="p"
   )
 
-  df.twdy.tfac <- df.twdy.t %>%
-    mutate(name.cov=factor(name.cov,levels=unique(.data$name.cov)))
+  df.twdy.tfac <- df.twdy.t
+  df.twdy.tfac$name.cov <- factor(df.twdy.t$name.cov,levels=unique(df.twdy.t$name.cov))
 
   df.twdy.o <- omit.history(
     input=df.twdy.tfac,

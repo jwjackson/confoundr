@@ -162,7 +162,7 @@ test_that("diagnostic 1, average over history",{
 
 })
 
-test_that("diagnostic 2, average over time",{
+test_that("diagnostic 1, average over time",{
 
   df.twdy.t <- lengthen(
     input=df.twdy,
@@ -210,7 +210,7 @@ test_that("diagnostic 2, average over time",{
 
 })
 
-test_that("diagnostic 2, average within periods of distance",{
+test_that("diagnostic 1, average within periods of distance",{
 
   df.twdy.t <- lengthen(
     input=df.twdy,
@@ -259,7 +259,7 @@ test_that("diagnostic 2, average within periods of distance",{
 
 })
 
-test_that("diagnostic 2, average over distance",{
+test_that("diagnostic 1, average over distance",{
 
   df.twdy.t <- lengthen(
     input=df.twdy,
