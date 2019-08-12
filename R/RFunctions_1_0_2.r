@@ -1583,24 +1583,27 @@ balance <- function (input,
           filter(.data$E!=first(.data$E))
 
         if (sd.ref=="no"){
+          full.table <- temp.table %>%
+            mutate(D=.data$mean.cov_b-.data$mean.cov_a,
+                   SMD=ifelse(.data$D==0,0,
+                              ifelse(.data$sd.cov_a==0 & .data$sd.cov_b==0,NA_real_,
+                                     ifelse(.data$sd.cov_a==0 | .data$sd.cov_b==0,(.data$mean.cov_b-.data$mean.cov_a)/(isTRUE(.data$sd.cov_a!=0)*.data$sd.cov_a + isTRUE(.data$sd.cov_b!=0)*.data$sd.cov_b),
+                                            (.data$mean.cov_b-.data$mean.cov_a)/sqrt((.data$sd.cov_a^2*(.data$n.cov_a-1)+.data$sd.cov_b^2*(.data$n.cov_b-1))/(.data$n.cov_a+.data$n.cov_b-2))
+                                     )
+                              )
+                   ),
+                   N=.data$n.cov_a+.data$n.cov_b,
+                   Nexp=.data$n.cov_b)
+
+        } else if (sd.ref=="yes"){
 
           full.table <- temp.table %>%
             mutate(D=.data$mean.cov_b-.data$mean.cov_a,
                    SMD=ifelse(.data$D==0,0,
-                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
-                                     (.data$mean.cov_b-.data$mean.cov_a)/sqrt((.data$sd.cov_a^2*(.data$n.cov_a-1)+.data$sd.cov_b^2*(.data$n.cov_b-1))/(.data$n.cov_a+.data$n.cov_b-2)))),
+                              ifelse(.data$sd.cov_a==0,NA_real_,
+                                     (.data$mean.cov_b-.data$mean.cov_a)/.data$sd.cov_a)),
                    N=.data$n.cov_a+.data$n.cov_b,
                    Nexp=.data$n.cov_b)
-
-          } else if (sd.ref=="yes"){
-
-            full.table <- temp.table %>%
-              mutate(D=.data$mean.cov_b-.data$mean.cov_a,
-                     SMD=ifelse(.data$D==0,0,
-                                ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
-                                       (.data$mean.cov_b-.data$mean.cov_a)/.data$sd.cov_a)),
-                     N=.data$n.cov_a+.data$n.cov_b,
-                     Nexp=.data$n.cov_b)
         }
 
       if ( any(is.na(unique(full.table$SMD))) ) warning("SMD values have been set to missing where there is no covariate variation within some level of time-exposure, time-covariate, exposure history, and exposure value; in this case averages for SMD estimates will also appear as missing")
@@ -1638,12 +1641,15 @@ balance <- function (input,
           filter(.data$E!=first(.data$E))
 
         if (sd.ref=="no"){
-
           full.table <- temp.table %>%
             mutate(D=.data$mean.cov_b-.data$mean.cov_a,
                    SMD=ifelse(.data$D==0,0,
-                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
-                                     (.data$mean.cov_b-.data$mean.cov_a)/sqrt((.data$sd.cov_a^2*(.data$n.cov_a-1)+.data$sd.cov_b^2*(.data$n.cov_b-1))/(.data$n.cov_a+.data$n.cov_b-2)))),
+                              ifelse(.data$sd.cov_a==0 & .data$sd.cov_b==0,NA_real_,
+                                     ifelse(.data$sd.cov_a==0 | .data$sd.cov_b==0,(.data$mean.cov_b-.data$mean.cov_a)/(isTRUE(.data$sd.cov_a!=0)*.data$sd.cov_a + isTRUE(.data$sd.cov_b!=0)*.data$sd.cov_b),
+                                            (.data$mean.cov_b-.data$mean.cov_a)/sqrt((.data$sd.cov_a^2*(.data$n.cov_a-1)+.data$sd.cov_b^2*(.data$n.cov_b-1))/(.data$n.cov_a+.data$n.cov_b-2))
+                                     )
+                              )
+                   ),
                    N=.data$n.cov_a+.data$n.cov_b,
                    Nexp=.data$n.cov_b)
 
@@ -1652,11 +1658,12 @@ balance <- function (input,
           full.table <- temp.table %>%
             mutate(D=.data$mean.cov_b-.data$mean.cov_a,
                    SMD=ifelse(.data$D==0,0,
-                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
+                              ifelse(.data$sd.cov_a==0,NA_real_,
                                      (.data$mean.cov_b-.data$mean.cov_a)/.data$sd.cov_a)),
                    N=.data$n.cov_a+.data$n.cov_b,
                    Nexp=.data$n.cov_b)
         }
+
 
       if ( any(is.na(unique(full.table$SMD))) ) warning("SMD values have been set to missing where there is no covariate variation within  some level of time-exposure, time-covariate, exposure history, and exposure value; in this case averages for SMD estimates will also appear as missing")
       if ( all(full.table$D==0) & all(full.table$SMD==0) ) warning("There may be no covariate variation within any level of time-exposure, time-covariate, exposure history and/or strata, and exposure value; please ensure that the temporal covariates are specified correctly.")
@@ -1711,12 +1718,15 @@ balance <- function (input,
                      filter(.data$E!=first(.data$E))
 
         if (sd.ref=="no"){
-
           full.table <- temp.table %>%
             mutate(D=.data$mean.cov_b-.data$mean.cov_a,
                    SMD=ifelse(.data$D==0,0,
-                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
-                                     (.data$mean.cov_b-.data$mean.cov_a)/sqrt((.data$sd.cov_a^2*(.data$n.cov_a-1)+.data$sd.cov_b^2*(.data$n.cov_b-1))/(.data$n.cov_a+.data$n.cov_b-2)))),
+                              ifelse(.data$sd.cov_a==0 & .data$sd.cov_b==0,NA_real_,
+                                     ifelse(.data$sd.cov_a==0 | .data$sd.cov_b==0,(.data$mean.cov_b-.data$mean.cov_a)/(isTRUE(.data$sd.cov_a!=0)*.data$sd.cov_a + isTRUE(.data$sd.cov_b!=0)*.data$sd.cov_b),
+                                            (.data$mean.cov_b-.data$mean.cov_a)/sqrt((.data$sd.cov_a^2*(.data$n.cov_a-1)+.data$sd.cov_b^2*(.data$n.cov_b-1))/(.data$n.cov_a+.data$n.cov_b-2))
+                                     )
+                              )
+                   ),
                    N=.data$n.cov_a+.data$n.cov_b,
                    Nexp=.data$n.cov_b)
 
@@ -1725,11 +1735,12 @@ balance <- function (input,
           full.table <- temp.table %>%
             mutate(D=.data$mean.cov_b-.data$mean.cov_a,
                    SMD=ifelse(.data$D==0,0,
-                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
+                              ifelse(.data$sd.cov_a==0,NA_real_,
                                      (.data$mean.cov_b-.data$mean.cov_a)/.data$sd.cov_a)),
                    N=.data$n.cov_a+.data$n.cov_b,
                    Nexp=.data$n.cov_b)
         }
+
 
       if ( any(is.na(unique(full.table$SMD))) ) warning("SMD values have been set to missing where there is no covariate variation within some level of time-exposure, time-covariate, exposure history, and exposure value; in this case averages for SMD estimates will also appear as missing")
       if ( all(full.table$D==0) & all(full.table$SMD==0) ) warning("There may be no covariate variation within any level of time-exposure, time-covariate, exposure history and/or strata, and exposure value; please ensure that the temporal covariates are specified correctly.")
@@ -1770,8 +1781,12 @@ balance <- function (input,
           full.table <- temp.table %>%
             mutate(D=.data$mean.cov_b-.data$mean.cov_a,
                    SMD=ifelse(.data$D==0,0,
-                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
-                                     (.data$mean.cov_b-.data$mean.cov_a)/sqrt((.data$sd.cov_a^2*(.data$n.cov_a-1)+.data$sd.cov_b^2*(.data$n.cov_b-1))/(.data$n.cov_a+.data$n.cov_b-2)))),
+                              ifelse(.data$sd.cov_a==0 & .data$sd.cov_b==0,NA_real_,
+                                     ifelse(.data$sd.cov_a==0 | .data$sd.cov_b==0,(.data$mean.cov_b-.data$mean.cov_a)/(isTRUE(.data$sd.cov_a!=0)*.data$sd.cov_a + isTRUE(.data$sd.cov_b!=0)*.data$sd.cov_b),
+                                            (.data$mean.cov_b-.data$mean.cov_a)/sqrt((.data$sd.cov_a^2*(.data$n.cov_a-1)+.data$sd.cov_b^2*(.data$n.cov_b-1))/(.data$n.cov_a+.data$n.cov_b-2))
+                                     )
+                              )
+                   ),
                    N=.data$n.cov_a+.data$n.cov_b,
                    Nexp=.data$n.cov_b)
 
@@ -1780,12 +1795,11 @@ balance <- function (input,
           full.table <- temp.table %>%
             mutate(D=.data$mean.cov_b-.data$mean.cov_a,
                    SMD=ifelse(.data$D==0,0,
-                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
+                              ifelse(.data$sd.cov_a==0,NA_real_,
                                      (.data$mean.cov_b-.data$mean.cov_a)/.data$sd.cov_a)),
                    N=.data$n.cov_a+.data$n.cov_b,
                    Nexp=.data$n.cov_b)
         }
-
 
       if ( any(is.na(unique(full.table$SMD))) ) warning("SMD values have been set to missing where there is no covariate variation within some level of time-exposure, time-covariate, strata, and exposure value; in this case averages for SMD estimates will also appear as missing")
       if ( all(full.table$D==0) & all(full.table$SMD==0) ) warning("There may be no covariate variation within any level of time-exposure, time-covariate, exposure history and/or strata, and exposure value; please ensure that the temporal covariates are specified correctly.")
@@ -1823,12 +1837,15 @@ balance <- function (input,
           filter(.data$E!=first(.data$E))
 
         if (sd.ref=="no"){
-
           full.table <- temp.table %>%
             mutate(D=.data$mean.cov_b-.data$mean.cov_a,
                    SMD=ifelse(.data$D==0,0,
-                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
-                                     (.data$mean.cov_b-.data$mean.cov_a)/sqrt((.data$sd.cov_a^2*(.data$n.cov_a-1)+.data$sd.cov_b^2*(.data$n.cov_b-1))/(.data$n.cov_a+.data$n.cov_b-2)))),
+                              ifelse(.data$sd.cov_a==0 & .data$sd.cov_b==0,NA_real_,
+                                     ifelse(.data$sd.cov_a==0 | .data$sd.cov_b==0,(.data$mean.cov_b-.data$mean.cov_a)/(isTRUE(.data$sd.cov_a!=0)*.data$sd.cov_a + isTRUE(.data$sd.cov_b!=0)*.data$sd.cov_b),
+                                            (.data$mean.cov_b-.data$mean.cov_a)/sqrt((.data$sd.cov_a^2*(.data$n.cov_a-1)+.data$sd.cov_b^2*(.data$n.cov_b-1))/(.data$n.cov_a+.data$n.cov_b-2))
+                                     )
+                              )
+                   ),
                    N=.data$n.cov_a+.data$n.cov_b,
                    Nexp=.data$n.cov_b)
 
@@ -1837,7 +1854,7 @@ balance <- function (input,
           full.table <- temp.table %>%
             mutate(D=.data$mean.cov_b-.data$mean.cov_a,
                    SMD=ifelse(.data$D==0,0,
-                              ifelse(.data$sd.cov_b==0 | .data$sd.cov_a==0,NA_real_,
+                              ifelse(.data$sd.cov_a==0,NA_real_,
                                      (.data$mean.cov_b-.data$mean.cov_a)/.data$sd.cov_a)),
                    N=.data$n.cov_a+.data$n.cov_b,
                    Nexp=.data$n.cov_b)
@@ -2517,9 +2534,9 @@ makeplot <- function (input,
   quo_plot.metric <-quote(plot.metric)
   quo_E <-quote(E)
   quo_H <-quote(H)
-  
+
   if (grouptype=="none") {
-  
+
   temp.plot <-
     labelled.input %>% group_by(.data$H,.data$E) %>%
     ggplot(aes(x=!! quo_name.cov,y=!! quo_plot.metric)
