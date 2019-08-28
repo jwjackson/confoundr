@@ -4,7 +4,7 @@ author: "John W. Jackson, Erin Schnellinger"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{ConfoundR Vignette}
+  %\VignetteIndexEntry{Demo Vignette}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
