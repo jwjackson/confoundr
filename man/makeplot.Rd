@@ -82,6 +82,11 @@ makeplot(input, diagnostic, approach, metric = "SMD", censoring, scope,
 
 \item{text.legend}{text to include in legend (optional)}
 }
+\value{
+A plot object. The trellised format is automatically chosen
+based on the format of the input dataframe, determined by \code{balance()}
+or \code{apply.scope()}.
+}
 \description{
 Function to create balance plot for a specified diagnostic
 }

@@ -32,6 +32,9 @@ apply.scope(input, diagnostic, approach, scope = "all",
 
 \item{metric}{the metric for which the user wishes to ignore missing values as specified in the 'ignore.missing.metric' argument.}
 }
+\value{
+A covariate balance table. See the \code{balance()} function for details.
+}
 \description{
 Function to subset the output table from balance() or diagnose() to covariate balance metrics at a certain distance (e.g. a certain recency) or produce estimates that average over person-time.
 }

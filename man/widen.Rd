@@ -29,6 +29,13 @@ widen(input, id, time, exposure, covariate, history = NULL,
 
 \item{censor}{censoring indicators at time t}
 }
+\value{
+A "wide" dataframe where each row uniquely indexes
+a single subject’s data, so that columns index measurement of
+each variable at each time. The indices should be indicated
+with an underscore suffix followed by the time, e.g.
+\code{variable_1,variable_2}.
+}
 \description{
 Function to create transform data from person-time format to person format suitable for lengthen()
 }

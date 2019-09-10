@@ -38,6 +38,13 @@ lengthen(input, diagnostic, censoring, id, times.exposure, times.covariate,
 
 \item{strata}{the root name for propensity-score strata e.g. "e"}
 }
+\value{
+A "tidy" dataframe where each record is indexed by the observation identifier,
+exposure measurement time, exposure value, covariate name, covariate measurement time
+and possibly exposure history and/or propensity score strata. Weights for exposure
+and/or censoring will appear as additional columns. The dataframe will be restricted to
+the uncensored if censoring rules were applied.
+}
 \description{
 Function to create a "tidy" dataframe where the key observation is the paring of exposure and covariate measurement times
 }

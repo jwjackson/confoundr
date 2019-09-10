@@ -18,6 +18,13 @@ omit.history(input, omission, covariate.name, distance = NULL,
 
 \item{times}{a vector of measurement times for the covariate e.g. c(1,2,3)}
 }
+\value{
+A "tidy" dataframe where covariate measurements have
+been removed based on their fixed measurement time or relative
+distance from exposure measurements (at time t). The removed
+covariate measurements are typically ones chosen to be ones
+that do not support exchangeability assumptions at time t.
+}
 \description{
 Function to remove irrelevant covariate history from balance tables and plots
 }

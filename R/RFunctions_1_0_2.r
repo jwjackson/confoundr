@@ -64,6 +64,12 @@ NULL
 #'                      covariate=c("l","m","n")
 #'                      )
 
+#' @return A "wide" dataframe where each row uniquely indexes
+#' a single subject’s data, so that columns index measurement of
+#' each variable at each time. The indices should be indicated
+#' with an underscore suffix followed by the time, e.g.
+#' \code{variable_1,variable_2}.
+
 widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=NULL,weight.censor=NULL,strata=NULL,censor=NULL) {
 
   input <- ungroup(input)
@@ -255,6 +261,11 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
 #'                                   name.history="h"
 #'                                   )
 
+#' @return A "wide" dataframe with an added set of exposure
+#' history variables for a time-varying exposure. The new
+#' history variables will use the time-indices in the exposure
+#' vectors you supply.
+
 makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h") {
 
   input <- ungroup(input)
@@ -436,6 +447,13 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
 #'                                   name.history.a="ha",
 #'                                   name.history.b="hb"
 #'                                  )
+
+#' @return A "wide" dataframe with an added set of
+#' exposure history variables for each of the two time-varying
+#' exposures, properly accounting for their temporal ordering
+#' (i.e. exposure "a" precedes exposure "b" at any time t).
+#' The new history variables will use the time-indices in the
+#' exposure vectors you supply.
 
 makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.history.a="ha",name.history.b="hb",times) {
 
@@ -684,6 +702,12 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
 #'                         static.covariate=c("n"),
 #'                         history="h"
 #'                         )
+
+#' @return A "tidy" dataframe where each record is indexed by the observation identifier,
+#' exposure measurement time, exposure value, covariate name, covariate measurement time
+#' and possibly exposure history and/or propensity score strata. Weights for exposure
+#' and/or censoring will appear as additional columns. The dataframe will be restricted to
+#' the uncensored if censoring rules were applied.
 
 lengthen <- function (input,
                       diagnostic,
@@ -990,6 +1014,12 @@ return(output)
 #'                                  covariate.name=c("l","m"),
 #'                                  distance=1)
 
+#' @return A "tidy" dataframe where covariate measurements have
+#' been removed based on their fixed measurement time or relative
+#' distance from exposure measurements (at time t). The removed
+#' covariate measurements are typically ones chosen to be ones
+#' that do not support exchangeability assumptions at time t.
+
 omit.history <- function (input,
                           omission,
                           covariate.name,
@@ -1067,6 +1097,8 @@ omit.history <- function (input,
 #             sort.order,
 #             ignore.missing.metric,
 #             metric)
+
+#' @return A covariate balance table. See the \code{balance()} function for details.
 
 apply.scope <- function (	input,
 							diagnostic,
@@ -1397,6 +1429,28 @@ apply.scope <- function (	input,
 #'                    exposure="a",
 #'                    history="h"
 #'                    )
+
+#' @return  A dataframe depicting a covariate balance table. If the
+#' argument \code{scope} does not equal "average" the returned table
+#' reports the mean difference \code{D} as well as the standardized
+#' mean difference \code{SMD} across levels of exposure, for each
+#' comparison of a non-referent value of exposure \code{E} vs. the
+#' referent value (the lowest value by default) at each pairing of exposure
+#' measurement times \code{time.covariate} and covariate measurement
+#' times \code{time.covariate} within levels of exposure history \code{H}
+#' (and/or strata \code{S}). The sample size of the non-referent group {Nexp}
+#' and the sample size summed across the non-referent and referent groups
+#' \code{N} used in the computation of \code{D} or \code{SMD} are also
+#' provided within levels of \code{H} and/or \code{S}. If the argument
+#' \code{scope} equals "average" and the argument \code{average.over} equals
+#' either "values" or "history" or "strata" the format is the same with the
+#' averaged over column removed. If the argument \code{scope} equals "average"
+#' and the argument \code{average.over} equals "time" then a column \code{distance}
+#' indicating the time between exposure and covariate measurements will be
+#' included. If the arguement for \code{scope} equals "average" and the argument
+#' for \code{average.over} equals "distance" then the columns \code{period.start}
+#' and \code{period.end} indicating the beginning and end of person-time
+#' segments will appear.
 
 balance <- function (input,
                      diagnostic,
@@ -1949,6 +2003,8 @@ balance <- function (input,
 #'          loop="yes",
 #'          sd.ref="no")
 
+#' @return A covariate balance table. See the \code{balance()} function for details.
+
 diagnose <- function (
   input,
   diagnostic,
@@ -2317,6 +2373,10 @@ diagnose <- function (
 #'                     scope="all",
 #'                     metric="SMD"
 #'                     )
+
+#' @return A plot object. The trellised format is automatically chosen
+#' based on the format of the input dataframe, determined by \code{balance()}
+#' or \code{apply.scope()}.
 
 makeplot <- function (input,
                       diagnostic,

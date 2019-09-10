@@ -63,6 +63,9 @@ diagnose(input, diagnostic, approach = "none", scope, censoring, id,
 
 \item{sd.ref}{"yes" or "no" depending on whether the user wishes to use the standard deviation of the reference group when calculating the SMD.}
 }
+\value{
+A covariate balance table. See the \code{balance()} function for details.
+}
 \description{
 Function to loop over the lengthen() and balance() functions
 }

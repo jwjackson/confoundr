@@ -24,6 +24,14 @@ makehistory.two(input, id, group = NULL, exposure.a, exposure.b,
 
 \item{times}{a vector of measurement times e.g. c(0,1,2)}
 }
+\value{
+A "wide" dataframe with an added set of
+exposure history variables for each of the two time-varying
+exposures, properly accounting for their temporal ordering
+(i.e. exposure "a" precedes exposure "b" at any time t).
+The new history variables will use the time-indices in the
+exposure vectors you supply.
+}
 \description{
 Function to create joint exposure history for two distinct time-varying exposures
 }

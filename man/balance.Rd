@@ -54,6 +54,29 @@ balance(input, diagnostic, approach = "none", censoring, scope,
 
 \item{sd.ref}{"yes" or "no" depending on whether the user wishes to use the standard deviation of the reference group when calculating the SMD.}
 }
+\value{
+A dataframe depicting a covariate balance table. If the
+argument \code{scope} does not equal "average" the returned table
+reports the mean difference \code{D} as well as the standardized
+mean difference \code{SMD} across levels of exposure, for each
+comparison of a non-referent value of exposure \code{E} vs. the
+referent value (the lowest value by default) at each pairing of exposure
+measurement times \code{time.covariate} and covariate measurement
+times \code{time.covariate} within levels of exposure history \code{H}
+(and/or strata \code{S}). The sample size of the non-referent group {Nexp}
+and the sample size summed across the non-referent and referent groups
+\code{N} used in the computation of \code{D} or \code{SMD} are also
+provided within levels of \code{H} and/or \code{S}. If the argument
+\code{scope} equals "average" and the argument \code{average.over} equals
+either "values" or "history" or "strata" the format is the same with the
+averaged over column removed. If the argument \code{scope} equals "average"
+and the argument \code{average.over} equals "time" then a column \code{distance}
+indicating the time between exposure and covariate measurements will be
+included. If the arguement for \code{scope} equals "average" and the argument
+for \code{average.over} equals "distance" then the columns \code{period.start}
+and \code{period.end} indicating the beginning and end of person-time
+segments will appear.
+}
 \description{
 Function to create a balance table for a specified diagnostic
 }

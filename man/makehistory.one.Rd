@@ -20,6 +20,12 @@ makehistory.one(input, id, times, group = NULL, exposure,
 
 \item{name.history}{desired root name for time-indexed history variables e.g. "h"}
 }
+\value{
+A "wide" dataframe with an added set of exposure
+history variables for a time-varying exposure. The new
+history variables will use the time-indices in the exposure
+vectors you supply.
+}
 \description{
 Function to create exposure history for a single time varying exposure
 }
