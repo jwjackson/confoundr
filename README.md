@@ -1,5 +1,7 @@
 # confoundr
 
+*** Now Available on [CRAN](https://cran.r-project.org/web/packages/confoundr/index.html) ***
+
 INTRODUCTION
 
 This software implements three [diagnostics for confounding/selection-bias](https://www.ncbi.nlm.nih.gov/pubmed/27479649) that can be used in sequence. Built upon the framework of sequential exchangeability, these apply to any study of multivariate exposures e.g. time-varying exposures, direct effects, interaction, and censoring. The first two diagnostics pertain to the nature of confounding/selection-bias in the data, while the third is meant to examine residual confounding/selection-bias after applying certain adjustment methods. These tools are meant to help describe confounding/selection-bias in complex data _after_ investigators have selected covariates to adjust for (e.g., through subject-matter knowledge).
