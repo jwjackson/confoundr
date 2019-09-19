@@ -2,13 +2,13 @@
 % Please edit documentation in R/RFunctions_1_0_2.r
 \name{omit.history}
 \alias{omit.history}
-\title{Function to remove irrelevant covariate history from balance tables and plots. Takes input from lengthen().}
+\title{Function to remove irrelevant covariate history from a tidy dataframe used to construct balance tables and plots. Takes input from lengthen(), balance() or diagnose().}
 \usage{
 omit.history(input, omission, covariate.name, distance = NULL,
   times = NULL)
 }
 \arguments{
-\item{input}{restructured dataframe from lengthen()}
+\item{input}{restructured tidy dataframe from lengthen() or a dataframe from balance() or diagnose()}
 
 \item{omission}{type of omission e.g. "fixed" or "relative" or "same.time"}
 
@@ -26,10 +26,10 @@ covariate measurements are typically ones chosen to be ones
 that do not support exchangeability assumptions at time t.
 }
 \description{
-Function to remove irrelevant covariate history from balance tables and plots. Takes input from lengthen().
+Function to remove irrelevant covariate history from a tidy dataframe used to construct balance tables and plots. Takes input from lengthen(), balance() or diagnose().
 }
 \details{
-omit.history() will take the dataframe produced by lengthen() and remove covariate measurements based on their fixed measurement time or relative distance from exposure measurements (at time t) i.e. ones that do not support exchangeability assumptions at time t. The covariate.name argument is used to name the covariate whose history you wish to modify. To process the same manipulation for a set of covariates, simply supply a vector of covariate names to covariate.name. The omission argument determines whether the covariate history is (i) set to missing for certain covariate measurement times (omission ="fixed" with times=a vector of integers) or (ii) set to missing only for covariate measurement times at or before a certain distance k from exposure measurement times (omission ="relative" with distance=some integer) or (iii) set to missing only for covariate measurements that share the same timing as exposure measurements (omission ="same.time"). The removed values are set to missing. For example, using the "fixed" omission option for covariate "l" at time 2 will set all data on "l" at time 2 to missing, regardless of the exposure measurement time. In contrast, using the "relative" omission option for covariate "l" with distance 2 will only set to missing data on "l" that is measured two units or more before the exposure measurement time (i.e. t-2, t-3, t-4 and so on). Last, using the "same.time" omission option for covariate "l" will set to missing all data on "l" that is measured at the same time as the exposure.  Missing data will be ignored when this dataframe is supplied to the balance() function. They will not contribute to the resulting covariate balance table, nor to plots produced by makeplot(),  nor will they contribute to any summary metrics are estimated by averaging over person-time.
+Intended for use with Diagnostics 1 and 3. omit.history() will take the dataframe produced by lengthen() and remove covariate measurements based on their fixed measurement time or relative distance from exposure measurements (at time t) i.e. ones that do not support exchangeability assumptions at time t. The covariate.name argument is used to name the covariate whose history you wish to modify. To process the same manipulation for a set of covariates, simply supply a vector of covariate names to covariate.name. The omission argument determines whether the covariate history is (i) set to missing for certain covariate measurement times (omission ="fixed" with times=a vector of integers) or (ii) set to missing only for covariate measurement times at or before a certain distance k from exposure measurement times (omission ="relative" with distance=some integer) or (iii) set to missing only for covariate measurements that share the same timing as exposure measurements (omission ="same.time"). The removed values are set to missing. For example, using the "fixed" omission option for covariate "l" at time 2 will set all data on "l" at time 2 to missing, regardless of the exposure measurement time. In contrast, using the "relative" omission option for covariate "l" with distance 2 will only set to missing data on "l" that is measured two units or more before the exposure measurement time (i.e. t-2, t-3, t-4 and so on). Last, using the "same.time" omission option for covariate "l" will set to missing all data on "l" that is measured at the same time as the exposure.  Missing data will be ignored when this dataframe is supplied to the balance() function. They will not contribute to the resulting covariate balance table, nor to plots produced by makeplot(),  nor will they contribute to any summary metrics are estimated by averaging over person-time. Note that omit.history also accepts input from balance() and diagnose() when their scope argument has been set to "all" (i.e., not averaging over time or distance or selecting times based on recency of measurements).
 }
 \examples{
 # Simulate the output of lengthen()
@@ -55,4 +55,8 @@ mydata.long.omit <- omit.history(input=mydata.long,
                                  omission="relative",
                                  covariate.name=c("l","m"),
                                  distance=1)
+
+
+
+
 }

@@ -8,7 +8,7 @@ makehistory.two(input, id, group = NULL, exposure.a, exposure.b,
   name.history.a = "ha", name.history.b = "hb", times)
 }
 \arguments{
-\item{input}{dataset in wide format}
+\item{input}{dataframe in wide format (e.g., indexed by person)}
 
 \item{id}{unique observation identifier e.g. "id"}
 
@@ -62,6 +62,7 @@ mydata.wide <- data.frame(id, a_0, a_1, a_2,
                           l_0, l_1, l_2,
                           m_0, m_1, m_2,
                           n_0, n_1, n_2)
+
 # Run the makehistory.two() function
 mydata.history <- makehistory.two(input=mydata.wide,
                                   id="id",

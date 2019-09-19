@@ -2,7 +2,7 @@
 % Please edit documentation in R/RFunctions_1_0_2.r
 \name{widen}
 \alias{widen}
-\title{Function to create transform data from person-time format to person format suitable for lengthen()}
+\title{Function to transform data from person-time format to person format suitable for lengthen()}
 \usage{
 widen(input, id, time, exposure, covariate, history = NULL,
   weight.exposure = NULL, weight.censor = NULL, strata = NULL,
@@ -37,7 +37,7 @@ with an underscore suffix followed by the time, e.g.
 \code{variable_1,variable_2}.
 }
 \description{
-Function to create transform data from person-time format to person format suitable for lengthen()
+Function to transform data from person-time format to person format suitable for lengthen()
 }
 \details{
 Numeric formats are preserved, factors are coerced into character.

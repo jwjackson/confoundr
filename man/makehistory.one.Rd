@@ -8,7 +8,7 @@ makehistory.one(input, id, times, group = NULL, exposure,
   name.history = "h")
 }
 \arguments{
-\item{input}{dataset in wide format (e.g.,)}
+\item{input}{dataframe in wide format (e.g., indexed by person)}
 
 \item{id}{unique observation identifier e.g. "id"}
 

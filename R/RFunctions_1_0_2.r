@@ -32,7 +32,7 @@ NULL
 ##WIDEN() FUNCTION##
 ####################
 
-#' Function to create transform data from person-time format to person format suitable for lengthen()
+#' Function to transform data from person-time format to person format suitable for lengthen()
 #' @param input dataframe in long format e.g., a person-time format
 #' @param id unique identifier at the unit (person) level
 #' @param time unique index for each observation within each unit
@@ -225,7 +225,7 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
 ###########################
 
 #' Function to create exposure history for a single time varying exposure.
-#' @param input dataset in wide format (e.g.,)
+#' @param input dataframe in wide format (e.g., indexed by person)
 #' @param id unique observation identifier e.g. "id"
 #' @param times a vector of measurement times e.g. c(0,1,2)
 #' @param exposure the root name for exposure e.g. "a"
@@ -402,7 +402,7 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
 
 
 #' Function to create joint exposure history for two distinct time-varying exposures
-#' @param input dataset in wide format
+#' @param input dataframe in wide format (e.g., indexed by person)
 #' @param id unique observation identifier e.g. "id"
 #' @param times a vector of measurement times e.g. c(0,1,2)
 #' @param exposure.a the root name for the first exposure e.g. "a"
@@ -437,7 +437,7 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
 #'                           l_0, l_1, l_2,
 #'                           m_0, m_1, m_2,
 #'                           n_0, n_1, n_2)
-
+#'
 #' # Run the makehistory.two() function
 #' mydata.history <- makehistory.two(input=mydata.wide,
 #'                                   id="id",
@@ -648,7 +648,7 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
 #######################
 
 #' Function to create a "tidy" dataframe where the key observation is the pairing of exposure and covariate measurement times
-#' @param input dataframe in wide format
+#' @param input dataframe in wide format (e.g., indexed by person)
 #' @param diagnostic diagnostic of interest e.g. 1, 2, or 3
 #' @param censoring use censoring indicators/weights e.g. "yes" or "no"
 #' @param id unique observation identifier e.g. "id"
@@ -981,14 +981,14 @@ return(output)
 ##OMIT HISTORY##
 ################
 
-#' Function to remove irrelevant covariate history from balance tables and plots. Takes input from lengthen().
-#' @param input restructured dataframe from lengthen()
+#' Function to remove irrelevant covariate history from a tidy dataframe used to construct balance tables and plots. Takes input from lengthen(), balance() or diagnose().
+#' @param input restructured tidy dataframe from lengthen() or a dataframe from balance() or diagnose()
 #' @param omission type of omission e.g. "fixed" or "relative" or "same.time"
 #' @param covariate.name root name of the covariate e.g. "m"
 #' @param distance the distance between exposure and covariate measurements e.g. 2
 #' @param times a vector of measurement times for the covariate e.g. c(1,2,3)
 #' @export
-#' @details omit.history() will take the dataframe produced by lengthen() and remove covariate measurements based on their fixed measurement time or relative distance from exposure measurements (at time t) i.e. ones that do not support exchangeability assumptions at time t. The covariate.name argument is used to name the covariate whose history you wish to modify. To process the same manipulation for a set of covariates, simply supply a vector of covariate names to covariate.name. The omission argument determines whether the covariate history is (i) set to missing for certain covariate measurement times (omission ="fixed" with times=a vector of integers) or (ii) set to missing only for covariate measurement times at or before a certain distance k from exposure measurement times (omission ="relative" with distance=some integer) or (iii) set to missing only for covariate measurements that share the same timing as exposure measurements (omission ="same.time"). The removed values are set to missing. For example, using the "fixed" omission option for covariate "l" at time 2 will set all data on "l" at time 2 to missing, regardless of the exposure measurement time. In contrast, using the "relative" omission option for covariate "l" with distance 2 will only set to missing data on "l" that is measured two units or more before the exposure measurement time (i.e. t-2, t-3, t-4 and so on). Last, using the "same.time" omission option for covariate "l" will set to missing all data on "l" that is measured at the same time as the exposure.  Missing data will be ignored when this dataframe is supplied to the balance() function. They will not contribute to the resulting covariate balance table, nor to plots produced by makeplot(),  nor will they contribute to any summary metrics are estimated by averaging over person-time.
+#' @details Intended for use with Diagnostics 1 and 3. omit.history() will take the dataframe produced by lengthen() and remove covariate measurements based on their fixed measurement time or relative distance from exposure measurements (at time t) i.e. ones that do not support exchangeability assumptions at time t. The covariate.name argument is used to name the covariate whose history you wish to modify. To process the same manipulation for a set of covariates, simply supply a vector of covariate names to covariate.name. The omission argument determines whether the covariate history is (i) set to missing for certain covariate measurement times (omission ="fixed" with times=a vector of integers) or (ii) set to missing only for covariate measurement times at or before a certain distance k from exposure measurement times (omission ="relative" with distance=some integer) or (iii) set to missing only for covariate measurements that share the same timing as exposure measurements (omission ="same.time"). The removed values are set to missing. For example, using the "fixed" omission option for covariate "l" at time 2 will set all data on "l" at time 2 to missing, regardless of the exposure measurement time. In contrast, using the "relative" omission option for covariate "l" with distance 2 will only set to missing data on "l" that is measured two units or more before the exposure measurement time (i.e. t-2, t-3, t-4 and so on). Last, using the "same.time" omission option for covariate "l" will set to missing all data on "l" that is measured at the same time as the exposure.  Missing data will be ignored when this dataframe is supplied to the balance() function. They will not contribute to the resulting covariate balance table, nor to plots produced by makeplot(),  nor will they contribute to any summary metrics are estimated by averaging over person-time. Note that omit.history also accepts input from balance() and diagnose() when their scope argument has been set to "all" (i.e., not averaging over time or distance or selecting times based on recency of measurements).
 #' @examples
 #' # Simulate the output of lengthen()
 #' id <- as.numeric(rep(c(1,1,1,2,2,2), 7))
@@ -1013,7 +1013,10 @@ return(output)
 #'                                  omission="relative",
 #'                                  covariate.name=c("l","m"),
 #'                                  distance=1)
-
+#'
+#'
+#'
+#'
 #' @return A "tidy" dataframe where covariate measurements have
 #' been removed based on their fixed measurement time or relative
 #' distance from exposure measurements (at time t). The removed
@@ -1067,9 +1070,9 @@ omit.history <- function (input,
   output <- output %>% na.omit()
 }
 
-######################
-#APPLY.SCOPE FUNCTION#
-######################
+########################
+##APPLY.SCOPE FUNCTION##
+########################
 
 #' Function to subset the output table from balance() or diagnose() to covariate balance metrics at a certain distance (e.g. a certain recency) or produce estimates that average over person-time.
 #' @param input dataframe output by diagnose() or balance() function
@@ -1084,7 +1087,7 @@ omit.history <- function (input,
 #' @param ignore.missing.metric "yes" or "no" depending on whether the user wishes to estimate averages over person-time when there are missing values of the mean difference or standardized mean difference. Missing values for the standardized mean difference can occur when, for example, there is no covariate variation within levels of exposure-history and measurement times. If this argument is set to "no" and there are missing values, the average will also be missing. If set to "yes" an average will be produced that ignores missing values.
 #' @param metric the metric for which the user wishes to ignore missing values as specified in the 'ignore.missing.metric' argument.
 #' @export
-#' @details When using the balance() , diagnose(), or  apply.scope() functions, specifying average.over="average" and average.over="time" will return balance metrics for each "distance" value. The output can be subset to specific distances of interest e.g. k=0 and k=2 by supplying a vector to list.distance e.g. c(0,2) but this is optional. Specifying average.over="distance", you can opt to average within segments of distance using the periods argument (leaving this blank will average over all distance values). The periods argument requires a list of contiguous numeric vectors e.g. list(0,1:4,5:10). For Diagnostic 3 this would report metrics at time t, averages over times t-1 to t-4, and averages over times t-5 to t-10. For Diagnostics 1 and 3 the entire range should lie between 0 and t. For Diagnostic 2 the entire range should lie between 1 and t.
+#' @details In most cases this helper function will not be needed by the user, unless omit.history() is called after diagnose() with scope="all" and one desires to subsequently average metris over time or distance. When using the balance() , diagnose(), or  apply.scope() functions, specifying average.over="average" and average.over="time" will return balance metrics for each "distance" value. The output can be subset to specific distances of interest e.g. k=0 and k=2 by supplying a vector to list.distance e.g. c(0,2) but this is optional. Specifying average.over="distance", you can opt to average within segments of distance using the periods argument (leaving this blank will average over all distance values). The periods argument requires a list of contiguous numeric vectors e.g. list(0,1:4,5:10). For Diagnostic 3 this would report metrics at time t, averages over times t-1 to t-4, and averages over times t-5 to t-10. For Diagnostics 1 and 3 the entire range should lie between 0 and t. For Diagnostic 2 the entire range should lie between 1 and t.
 # @examples
 # apply.scope(input,
 #             diagnostic,
@@ -1380,7 +1383,7 @@ apply.scope <- function (	input,
 ####################
 
 #' Function to create a balance table for a specified diagnostic. Takes input from lengthen() or omit.history().
-#' @param input output from lengthen() or omit.history()
+#' @param input a restructured tidy dataframe output from lengthen() or omit.history()
 #' @param diagnostic diagnostic of interest e.g. 1, 2, or 3
 #' @param approach adjustment method e.g. "none" or "weight" or "stratify"
 #' @param censoring use censoring indicators/weights e.g. "yes" or "no"
@@ -1402,7 +1405,7 @@ apply.scope <- function (	input,
 #' @param sd.ref "yes" or "no" depending on whether the user wishes to use the standard deviation of the reference group when calculating the SMD.
 #' @param loop a housekeeping argument the user can ignore. It is automatically set when the balance function is called by the diagnose() function described later. The default is set to "no".
 #' @export
-#' @details When using the balance() , diagnose(), or  apply.scope() functions, specifying average.over="average" and average.over="time" will return balance metrics for each "distance" value. The output can be subset to specific distances of interest e.g. k=0 and k=2 by supplying a vector to list.distance e.g. c(0,2) but this is optional. Specifying average.over="distance", you can opt to average within segments of distance using the periods argument (leaving this blank will average over all distance values). The periods argument requires a list of contiguous numeric vectors e.g. list(0,1:4,5:10). For Diagnostic 3 this would report metrics at time t, averages over times t-1 to t-4, and averages over times t-5 to t-10. For Diagnostics 1 and 3 the entire range should lie between 0 and t. For Diagnostic 2 the entire range should lie between 1 and t.
+#' @details When using the balance(), diagnose(), or  apply.scope() functions, specifying average.over="average" and average.over="time" will return balance metrics for each "distance" value. The output can be subset to specific distances of interest e.g. k=0 and k=2 by supplying a vector to list.distance e.g. c(0,2) but this is optional. Specifying average.over="distance", you can opt to average within segments of distance using the periods argument (leaving this blank will average over all distance values). The periods argument requires a list of contiguous numeric vectors e.g. list(0,1:4,5:10). For Diagnostic 3 this would report metrics at time t, averages over times t-1 to t-4, and averages over times t-5 to t-10. For Diagnostics 1 and 3 the entire range should lie between 0 and t. For Diagnostic 2 the entire range should lie between 1 and t.
 #' @examples
 #' # Simulate the output of lengthen() or omit.history()
 #' id <- as.numeric(rep(c(1,1,1,2,2,2), 70))
@@ -1438,7 +1441,7 @@ apply.scope <- function (	input,
 #' referent value (the lowest value by default) at each pairing of exposure
 #' measurement times \code{time.covariate} and covariate measurement
 #' times \code{time.covariate} within levels of exposure history \code{H}
-#' (and/or strata \code{S}). The sample size of the non-referent group {Nexp}
+#' (and/or strata \code{S}). The sample size of the non-referent group \code{Nexp}
 #' and the sample size summed across the non-referent and referent groups
 #' \code{N} used in the computation of \code{D} or \code{SMD} are also
 #' provided within levels of \code{H} and/or \code{S}. If the argument
@@ -1956,7 +1959,7 @@ balance <- function (input,
 ##########
 
 #' Function to loop over the lengthen() and balance() functions.
-#' @param input restructured dataframe
+#' @param input dataframe in wide format (e.g., indexed by person)
 #' @param diagnostic diagnostic of interest e.g. 1, 2, or 3
 #' @param censoring use censoring indicators/weights e.g. "yes" or "no"
 #' @param approach adjustment method e.g. "none" or "weight" or "stratify"
@@ -2315,7 +2318,7 @@ diagnose <- function (
 #####################
 
 #' Function to create balance plot for a specified diagnostic. Takes input from balance() or apply.scope() or diagnose().
-#' @param input output from balance()
+#' @param input output from balance() or diagnose() or apply.scope()
 #' @param diagnostic diagnostic of interest e.g. 1, 2, or 3
 #' @param approach adjustment method e.g. "none" or "weight" or "stratify"
 #' @param metric scale e.g. "D" for mean difference, "SMD" for standardized mean difference

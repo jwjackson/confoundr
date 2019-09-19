@@ -10,7 +10,7 @@ lengthen(input, diagnostic, censoring, id, times.exposure, times.covariate,
   weight.censor = NULL, strata = NULL)
 }
 \arguments{
-\item{input}{dataframe in wide format}
+\item{input}{dataframe in wide format (e.g., indexed by person)}
 
 \item{diagnostic}{diagnostic of interest e.g. 1, 2, or 3}
 

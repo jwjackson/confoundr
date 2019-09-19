@@ -16,7 +16,7 @@ makeplot(input, diagnostic, approach, metric = "SMD", censoring, scope,
   legend.title = "", legend.position = "bottom", text.legend = NULL)
 }
 \arguments{
-\item{input}{output from balance()}
+\item{input}{output from balance() or diagnose() or apply.scope()}
 
 \item{diagnostic}{diagnostic of interest e.g. 1, 2, or 3}
 
