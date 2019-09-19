@@ -2,13 +2,13 @@
 % Please edit documentation in R/RFunctions_1_0_2.r
 \name{makehistory.one}
 \alias{makehistory.one}
-\title{Function to create exposure history for a single time varying exposure}
+\title{Function to create exposure history for a single time varying exposure.}
 \usage{
 makehistory.one(input, id, times, group = NULL, exposure,
   name.history = "h")
 }
 \arguments{
-\item{input}{dataset in wide format}
+\item{input}{dataset in wide format (e.g.,)}
 
 \item{id}{unique observation identifier e.g. "id"}
 
@@ -27,7 +27,7 @@ history variables will use the time-indices in the exposure
 vectors you supply.
 }
 \description{
-Function to create exposure history for a single time varying exposure
+Function to create exposure history for a single time varying exposure.
 }
 \examples{
 # Simulate wide data set for two subjects

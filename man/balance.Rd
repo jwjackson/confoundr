@@ -2,7 +2,7 @@
 % Please edit documentation in R/RFunctions_1_0_2.r
 \name{balance}
 \alias{balance}
-\title{Function to create a balance table for a specified diagnostic}
+\title{Function to create a balance table for a specified diagnostic. Takes input from lengthen() or omit.history().}
 \usage{
 balance(input, diagnostic, approach = "none", censoring, scope,
   times.exposure, times.covariate, exposure, history = NULL,
@@ -12,7 +12,7 @@ balance(input, diagnostic, approach = "none", censoring, scope,
   ignore.missing.metric = "no", metric = "SMD", sd.ref = "no")
 }
 \arguments{
-\item{input}{restructured dataframe}
+\item{input}{output from lengthen() or omit.history()}
 
 \item{diagnostic}{diagnostic of interest e.g. 1, 2, or 3}
 
@@ -78,7 +78,7 @@ and \code{period.end} indicating the beginning and end of person-time
 segments will appear.
 }
 \description{
-Function to create a balance table for a specified diagnostic
+Function to create a balance table for a specified diagnostic. Takes input from lengthen() or omit.history().
 }
 \details{
 When using the balance() , diagnose(), or  apply.scope() functions, specifying average.over="average" and average.over="time" will return balance metrics for each "distance" value. The output can be subset to specific distances of interest e.g. k=0 and k=2 by supplying a vector to list.distance e.g. c(0,2) but this is optional. Specifying average.over="distance", you can opt to average within segments of distance using the periods argument (leaving this blank will average over all distance values). The periods argument requires a list of contiguous numeric vectors e.g. list(0,1:4,5:10). For Diagnostic 3 this would report metrics at time t, averages over times t-1 to t-4, and averages over times t-5 to t-10. For Diagnostics 1 and 3 the entire range should lie between 0 and t. For Diagnostic 2 the entire range should lie between 1 and t.

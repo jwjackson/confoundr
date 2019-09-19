@@ -2,7 +2,7 @@
 % Please edit documentation in R/RFunctions_1_0_2.r
 \name{diagnose}
 \alias{diagnose}
-\title{Function to loop over the lengthen() and balance() functions}
+\title{Function to loop over the lengthen() and balance() functions.}
 \usage{
 diagnose(input, diagnostic, approach = "none", scope, censoring, id,
   times.exposure, times.covariate, exposure, temporal.covariate,
@@ -67,7 +67,7 @@ diagnose(input, diagnostic, approach = "none", scope, censoring, id,
 A covariate balance table. See the \code{balance()} function for details.
 }
 \description{
-Function to loop over the lengthen() and balance() functions
+Function to loop over the lengthen() and balance() functions.
 }
 \details{
 When using the balance() , diagnose(), or  apply.scope() functions, specifying average.over="average" and average.over="time" will return balance metrics for each "distance" value. The output can be subset to specific distances of interest e.g. k=0 and k=2 by supplying a vector to list.distance e.g. c(0,2) but this is optional. Specifying average.over="distance", you can opt to average within segments of distance using the periods argument (leaving this blank will average over all distance values). The periods argument requires a list of contiguous numeric vectors e.g. list(0,1:4,5:10). For Diagnostic 3 this would report metrics at time t, averages over times t-1 to t-4, and averages over times t-5 to t-10. For Diagnostics 1 and 3 the entire range should lie between 0 and t. For Diagnostic 2 the entire range should lie between 1 and t.

@@ -2,7 +2,7 @@
 % Please edit documentation in R/RFunctions_1_0_2.r
 \name{lengthen}
 \alias{lengthen}
-\title{Function to create a "tidy" dataframe where the key observation is the paring of exposure and covariate measurement times}
+\title{Function to create a "tidy" dataframe where the key observation is the pairing of exposure and covariate measurement times}
 \usage{
 lengthen(input, diagnostic, censoring, id, times.exposure, times.covariate,
   exposure, temporal.covariate, static.covariate = NULL,
@@ -46,7 +46,7 @@ and/or censoring will appear as additional columns. The dataframe will be restri
 the uncensored if censoring rules were applied.
 }
 \description{
-Function to create a "tidy" dataframe where the key observation is the paring of exposure and covariate measurement times
+Function to create a "tidy" dataframe where the key observation is the pairing of exposure and covariate measurement times
 }
 \details{
 The input dataset should have one record per observation (wide format) with the timing of variables indexed by an underscore followed by the time index (underscores should NOT appear anywhere else in the variable name). Any indexing scheme can be used (e.g. "var_1","var_4","var_9"), but it may be easiest to assign zero as the baseline index and increase it by one the unit for each subsequent measurement (e.g. "var_0","var_1","var_2"). You can use widen() to transform a person-time dataset into this format. The common referent value—to which all other exposure levels are compared—should be coded as the lowest value. Data with artificial censoring rules should contain a vector of time-indexed censoring indicators (1=censored, 0 otherwise).

@@ -224,8 +224,8 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
 ##MAKEHISTORY() FUNCTIONS##
 ###########################
 
-#' Function to create exposure history for a single time varying exposure
-#' @param input dataset in wide format
+#' Function to create exposure history for a single time varying exposure.
+#' @param input dataset in wide format (e.g.,)
 #' @param id unique observation identifier e.g. "id"
 #' @param times a vector of measurement times e.g. c(0,1,2)
 #' @param exposure the root name for exposure e.g. "a"
@@ -349,7 +349,7 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
              his.value=CumPaste(.data$his.lag)) %>% #use CumPaste
 #             his.value=accumulate(.data$his.lag,paste,sep="")) %>% #use accumulate instead (slower)
       select(.data$ID,c("his.name","his.time","his.value")) %>%
-      unite(col="his.name.time",from=c("his.name","his.time"),sep="_") %>%
+      unite(col="his.name.time",c(.data$his.name,.data$his.time),sep="_") %>%
       spread(.data$his.name.time,.data$his.value)
 
       output <- input %>%
@@ -386,7 +386,7 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
              his.value=str_c(.data$GROUP,.data$his.temp)
              ) %>%
       select(.data$ID,c("his.name","his.time","his.value")) %>%
-      unite(col="his.name.time",from=c("his.name","his.time"),sep="_") %>%
+      unite(col="his.name.time",c(.data$his.name,.data$his.time),sep="_") %>%
       spread(.data$his.name.time,.data$his.value)
 
       output <- input %>%
@@ -567,12 +567,12 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
 
     input.temp.a <- input.temp %>%
       select(.data$ID,c("his.name.a","his.time.a","his.value.a")) %>%
-      unite(col="his.name.time.a",from=c("his.name.a","his.time.a"),sep="_") %>%
+      unite(col="his.name.time.a",c(.data$his.name.a,.data$his.time.a),sep="_") %>%
       spread(.data$his.name.time.a,.data$his.value.a)
 
     input.temp.b <- input.temp %>%
       select(.data$ID,c("his.name.b","his.time.b","his.value.b")) %>%
-      unite(col="his.name.time.b",from=c("his.name.b","his.time.b"),sep="_") %>%
+      unite(col="his.name.time.b",c(.data$his.name.b,.data$his.time.b),sep="_") %>%
       spread(.data$his.name.time.b,.data$his.value.b)
 
     output <- input %>%
@@ -621,12 +621,12 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
 
     input.temp.a <- input.temp %>%
       select(.data$ID,c("his.name.a","his.time.a","his.value.a")) %>%
-      unite(col="his.name.time.a",from=c("his.name.a","his.time.a"),sep="_") %>%
+      unite(col="his.name.time.a",c(.data$his.name.a,.data$his.time.a),sep="_") %>%
       spread(.data$his.name.time.a,.data$his.value.a)
 
     input.temp.b <- input.temp %>%
       select(.data$ID,c("his.name.b","his.time.b","his.value.b")) %>%
-      unite(col="his.name.time.b",from=c("his.name.b","his.time.b"),sep="_") %>%
+      unite(col="his.name.time.b",c(.data$his.name.b,.data$his.time.b),sep="_") %>%
       spread(.data$his.name.time.b,.data$his.value.b)
 
     output <- input %>%
@@ -647,7 +647,7 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
 ##LENGTHEN() FUNCTION##
 #######################
 
-#' Function to create a "tidy" dataframe where the key observation is the paring of exposure and covariate measurement times
+#' Function to create a "tidy" dataframe where the key observation is the pairing of exposure and covariate measurement times
 #' @param input dataframe in wide format
 #' @param diagnostic diagnostic of interest e.g. 1, 2, or 3
 #' @param censoring use censoring indicators/weights e.g. "yes" or "no"
@@ -981,7 +981,7 @@ return(output)
 ##OMIT HISTORY##
 ################
 
-#' Function to remove irrelevant covariate history from balance tables and plots
+#' Function to remove irrelevant covariate history from balance tables and plots. Takes input from lengthen().
 #' @param input restructured dataframe from lengthen()
 #' @param omission type of omission e.g. "fixed" or "relative" or "same.time"
 #' @param covariate.name root name of the covariate e.g. "m"
@@ -1379,8 +1379,8 @@ apply.scope <- function (	input,
 ##BALANCE FUNCTION##
 ####################
 
-#' Function to create a balance table for a specified diagnostic
-#' @param input restructured dataframe
+#' Function to create a balance table for a specified diagnostic. Takes input from lengthen() or omit.history().
+#' @param input output from lengthen() or omit.history()
 #' @param diagnostic diagnostic of interest e.g. 1, 2, or 3
 #' @param approach adjustment method e.g. "none" or "weight" or "stratify"
 #' @param censoring use censoring indicators/weights e.g. "yes" or "no"
@@ -1955,7 +1955,7 @@ balance <- function (input,
 #DIAGNOSE#
 ##########
 
-#' Function to loop over the lengthen() and balance() functions
+#' Function to loop over the lengthen() and balance() functions.
 #' @param input restructured dataframe
 #' @param diagnostic diagnostic of interest e.g. 1, 2, or 3
 #' @param censoring use censoring indicators/weights e.g. "yes" or "no"
@@ -2314,7 +2314,7 @@ diagnose <- function (
 ##MAKEPLOT FUNCTION##
 #####################
 
-#' Function to create balance plot for a specified diagnostic
+#' Function to create balance plot for a specified diagnostic. Takes input from balance() or apply.scope() or diagnose().
 #' @param input output from balance()
 #' @param diagnostic diagnostic of interest e.g. 1, 2, or 3
 #' @param approach adjustment method e.g. "none" or "weight" or "stratify"
