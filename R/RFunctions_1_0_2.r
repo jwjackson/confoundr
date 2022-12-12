@@ -20,7 +20,7 @@
 #' @import Rmpfr
 #' @import ggplot2
 #' @importFrom magrittr %>%
-#' @importFrom tidyr pivot_longer separate unite pivot_wider
+#' @importFrom tidyr pivot_longer separate unite pivot_wider gather
 #' @importFrom dplyr mutate mutate_at select select_if filter arrange summarise group_by ungroup first last lag between bind_rows left_join desc n_distinct rename left_join bind_rows desc if_else
 #' @importFrom rlang .data !! := sym
 #' @importFrom stringr str_c
