@@ -350,7 +350,7 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
       arrange(.data$ID,.data$exp.time) %>%
       mutate(his.name=name.history,
              his.time=.data$exp.time,
-             his.lag=if_else(.data$exp.time==first(.data$his.time,default="NA"),
+             his.lag=if_else(.data$exp.time==first(.data$his.time,default=NA),
                               "H",
                               lag(.data$exp.value)),
              his.value=CumPaste(.data$his.lag)) %>% #use CumPaste
@@ -387,7 +387,7 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
       arrange(.data$ID,.data$exp.time) %>%
       mutate(his.name=name.history,
              his.time=.data$exp.time,
-             his.lag=if_else(.data$his.time==first(.data$his.time,default="NA"),
+             his.lag=if_else(.data$his.time==first(.data$his.time,default=NA),
                             "H",
                             lag(.data$exp.value)),
              his.temp=CumPaste(.data$his.lag), #use CumPaste
@@ -569,7 +569,7 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
              his.name.b=name.history.b,
              his.time.a=.data$exp.time,
              his.time.b=.data$exp.time,
-             his.lag=if_else(.data$exp.time==first(.data$exp.time,default="NA"),
+             his.lag=if_else(.data$exp.time==first(.data$exp.time, default=NA),
                               "H",
                               lag(paste(.data$exp.value.a,.data$exp.value.b,sep=""))),
              his.value.a=CumPaste(.data$his.lag), #use CumPaste
@@ -625,7 +625,7 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
              his.name.b=name.history.b,
              his.time.a=.data$exp.time,
              his.time.b=.data$exp.time,
-             his.lag=if_else(.data$exp.time==first(.data$exp.time,default="NA"),
+             his.lag=if_else(.data$exp.time==first(.data$exp.time,default=NA),
                              "H",
                              lag(paste(.data$exp.value.a,.data$exp.value.b,sep=""))),
              his.temp.a=CumPaste(.data$his.lag), #use CumPaste
