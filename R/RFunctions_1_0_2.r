@@ -20,7 +20,7 @@
 #' @import Rmpfr
 #' @import ggplot2
 #' @importFrom magrittr %>%
-#' @importFrom tidyr pivot_longer separate unite pivot_wider
+#' @importFrom tidyr pivot_longer separate unite pivot_wider gather
 #' @importFrom dplyr mutate mutate_at select select_if filter arrange summarise group_by ungroup first last lag between bind_rows left_join desc n_distinct rename left_join bind_rows desc if_else
 #' @importFrom rlang .data !! := sym
 #' @importFrom stringr str_c
@@ -132,9 +132,9 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
   
   #break apart by type & rename key vars
   input.num.l <- input %>%
-    select(-c(.data$ID.TIME)) %>%
+    select(!"ID.TIME") %>%
     group_by(.data$ID) %>%
-    select(.data$ID,.data$TIME,variables) %>%
+    select("ID", "TIME", all_of(variables)) %>%
     mutate(TIME=as.numeric(.data$TIME)) %>%
     select_if(is.numeric) %>%
     ungroup()
@@ -142,17 +142,17 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
   TimeLevels <- sort(unique(input.num.l$TIME))
   
   input.fac.l <- input %>%
-    select(-c(.data$ID.TIME)) %>%
+    select(!"ID.TIME") %>%
     group_by(.data$ID) %>%
-    select(.data$TIME,variables) %>%
+    select("TIME", all_of(variables)) %>%
     mutate(TIME=factor(.data$TIME,levels=TimeLevels)) %>%
     select_if(is.factor) %>%
     ungroup()
   
   input.char.l <- input %>%
-    select(-c(.data$ID.TIME)) %>%
+    select(!"ID.TIME") %>%
     group_by(.data$ID) %>%
-    select(.data$ID,.data$TIME,variables) %>%
+    select("ID", "TIME", all_of(variables)) %>%
     mutate(TIME=as.character(.data$TIME)) %>%
     select_if(is.character) %>%
     ungroup()
@@ -162,11 +162,11 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
   #process separately
   if (ncol(input.num.l)>2) {
     input.num.w <- input.num.l %>%
-      #gather(key="var",value="val",-c(.data$ID,.data$TIME)) %>%
-      pivot_longer(!c(.data$ID,.data$TIME), names_to="var", values_to="val") %>%
-      unite(col="var_time",var,.data$TIME,sep="_") %>%
-      #spread(key="var_time",value=.data$val) %>%
-      pivot_wider(names_from=var_time, values_from=.data$val) %>%
+      #gather(key="var",value="val", !c("ID", "TIME")) %>%
+      pivot_longer(!c("ID", "TIME"), names_to="var", values_to="val") %>%
+      unite(col="var_time", "var", "TIME", sep="_") %>%
+      #spread(key="var_time",value="val") %>%
+      pivot_wider(names_from="var_time", values_from="val") %>%
       arrange(.data$ID)
   } else {
     input.num.w <- NULL
@@ -178,7 +178,7 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
       pivot_longer(!c(.data$ID,.data$TIME), names_to="var", values_to="val") %>%
       unite(col="var_time",var,.data$TIME,sep="_") %>%
       #spread(key="var_time",value=.data$val) %>%
-      pivot_wider(names_from=var_time, values_from=.data$val) %>%
+      pivot_wider(names_from=var_time, values_from="val") %>%
       arrange(.data$ID)
   } else {
     input.fac.w <- NULL
@@ -186,11 +186,11 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
   
   if (ncol(input.char.l)>2) {
     input.char.w <- input.char.l %>%
-      #gather(key="var",value="val",-c(.data$ID,.data$TIME)) %>%
-      pivot_longer(!c(.data$ID,.data$TIME), names_to="var", values_to="val") %>%
-      unite(col="var_time",var,.data$TIME,sep="_") %>%
-      #spread(key="var_time",value=.data$val) %>%
-      pivot_wider(names_from=var_time, values_from=.data$val) %>%
+      #gather(key="var",value="val",!c("ID", "TIME")) %>%
+      pivot_longer(!c("ID", "TIME"), names_to="var", values_to="val") %>%
+      unite(col="var_time", "var",  "TIME", sep="_") %>%
+      #spread(key="var_time", value= "val") %>%
+      pivot_wider(names_from="var_time", values_from="val") %>%
       arrange(.data$ID)
   } else {
     input.char.w <- NULL
@@ -218,7 +218,7 @@ widen <- function(input,id,time,exposure,covariate,history=NULL,weight.exposure=
   }
   
   output <- output %>%
-    rename(!! s_id := .data$ID) %>%
+    rename("{s_id}" := "ID") %>%
     data.frame()
   
   return(output)
@@ -337,7 +337,7 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
 
     input.temp <- input %>%
       ungroup() %>%
-      select(.data$ID,all_of(list.exposure)) %>%
+      select("ID", all_of(list.exposure)) %>%
       #gather(key="exp.name.time",value="exp.value",list.exposure) %>%
       pivot_longer(all_of(list.exposure), names_to="exp.name.time", values_to="exp.value") %>%
       separate(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
@@ -350,19 +350,19 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
       arrange(.data$ID,.data$exp.time) %>%
       mutate(his.name=name.history,
              his.time=.data$exp.time,
-             his.lag=if_else(.data$exp.time==first(.data$his.time,default="NA"),
+             his.lag=if_else(.data$exp.time==first(.data$his.time,default=NA),
                               "H",
                               lag(.data$exp.value)),
              his.value=CumPaste(.data$his.lag)) %>% #use CumPaste
 #             his.value=accumulate(.data$his.lag,paste,sep="")) %>% #use accumulate instead (slower)
-      select(.data$ID,c("his.name","his.time","his.value")) %>%
-      unite(col="his.name.time",c(.data$his.name,.data$his.time),sep="_") %>%
-      #spread(.data$his.name.time,.data$his.value)
-      pivot_wider(names_from=.data$his.name.time, values_from=.data$his.value)
+      select("ID", "his.name", "his.time", "his.value") %>%
+      unite(col="his.name.time", c("his.name","his.time"), sep="_") %>%
+      #spread("his.name.time", "his.value")
+      pivot_wider(names_from="his.name.time", values_from="his.value")
 
       output <- input %>%
         left_join(input.temp,by="ID") %>%
-        rename(!! s_id := .data$ID) %>%
+        rename("{s_id}" :=  "ID") %>%
 	      data.frame()
 
 	    return(output)
@@ -373,10 +373,10 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
 
     input.temp <- input %>%
       ungroup() %>%
-      select(.data$ID,all_of(list.exposure),!! s_group) %>%
+      select("ID", all_of(c(list.exposure, group))) %>%
       rename(GROUP= !! s_group) %>%
-      #gather(key="exp.name.time",value="exp.value",list.exposure,-.data$GROUP) %>%
-      pivot_longer(all_of(list.exposure) & !.data$GROUP, names_to="exp.name.time", values_to="exp.value") %>%
+      #gather(key="exp.name.time",value="exp.value",all_of(list.exposure),!"GROUP") %>%
+      pivot_longer(all_of(list.exposure) & !"GROUP", names_to="exp.name.time", values_to="exp.value") %>%
       separate(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
       mutate(exp.time=as.numeric(.data$exp.time),
              exp.value=ifelse(is.na(.data$exp.value),
@@ -387,22 +387,22 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
       arrange(.data$ID,.data$exp.time) %>%
       mutate(his.name=name.history,
              his.time=.data$exp.time,
-             his.lag=if_else(.data$his.time==first(.data$his.time,default="NA"),
+             his.lag=if_else(.data$his.time==first(.data$his.time,default=NA),
                             "H",
                             lag(.data$exp.value)),
              his.temp=CumPaste(.data$his.lag), #use CumPaste
 #             his.temp=accumulate(.data$his.lag,paste,sep=""), #use accumulate instead (slower)
              his.value=str_c(.data$GROUP,.data$his.temp)
              ) %>%
-      select(.data$ID,c("his.name","his.time","his.value")) %>%
-      unite(col="his.name.time",c(.data$his.name,.data$his.time),sep="_") %>%
-      #spread(.data$his.name.time,.data$his.value)
-      pivot_wider(names_from=.data$his.name.time, values_from=.data$his.value)
+      select("ID",c("his.name","his.time","his.value")) %>%
+      unite(col="his.name.time", c("his.name", "his.time"), sep="_") %>%
+      #spread("his.name.time", "his.value")
+      pivot_wider(names_from="his.name.time", values_from="his.value")
       
 
       output <- input %>%
         left_join(input.temp,by="ID") %>%
-        rename(!! s_id := .data$ID) %>%
+        rename("{s_id}" := "ID") %>%
         data.frame()
 
 	  return(output)
@@ -547,15 +547,15 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
 
     input.temp <- input %>%
       ungroup() %>%
-      select(.data$ID,all_of(list.exposure.a),all_of(list.exposure.b)) %>%
+      select("ID", all_of(c(list.exposure.a, list.exposure.b))) %>%
       #gather(key="exp.name.time",value="exp.value",list.exposure.a,list.exposure.b) %>%
-      pivot_longer(c(all_of(list.exposure.a),all_of(list.exposure.b)), names_to="exp.name.time", values_to="exp.value") %>%
+      pivot_longer(all_of(c(list.exposure.a, list.exposure.b)), names_to="exp.name.time", values_to="exp.value") %>%
       separate(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
       #spread(key="exp.name",value="exp.value") %>%
       pivot_wider(names_from=exp.name, values_from=exp.value) %>%
       mutate(exp.time=as.numeric(.data$exp.time)) %>%
-      rename(exp.value.a=exposure.a,
-             exp.value.b=exposure.b) %>%
+      rename(exp.value.a=all_of(exposure.a),
+             exp.value.b=all_of(exposure.b)) %>%
       mutate(exp.value.a=if_else(is.na(.data$exp.value.a),
                         "NA",
                         as.character(.data$exp.value.a)),
@@ -569,7 +569,7 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
              his.name.b=name.history.b,
              his.time.a=.data$exp.time,
              his.time.b=.data$exp.time,
-             his.lag=if_else(.data$exp.time==first(.data$exp.time,default="NA"),
+             his.lag=if_else(.data$exp.time==first(.data$exp.time, default=NA),
                               "H",
                               lag(paste(.data$exp.value.a,.data$exp.value.b,sep=""))),
              his.value.a=CumPaste(.data$his.lag), #use CumPaste
@@ -579,21 +579,21 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
              )
 
     input.temp.a <- input.temp %>%
-      select(.data$ID,c("his.name.a","his.time.a","his.value.a")) %>%
-      unite(col="his.name.time.a",c(.data$his.name.a,.data$his.time.a),sep="_") %>%
-      #spread(.data$his.name.time.a,.data$his.value.a)
-      pivot_wider(names_from=.data$his.name.time.a, values_from=.data$his.value.a)
+      select("ID", "his.name.a", "his.time.a", "his.value.a") %>%
+      unite(col="his.name.time.a", c("his.name.a", "his.time.a"), sep="_") %>%
+      #spread("his.name.time.a", "his.value.a")
+      pivot_wider(names_from="his.name.time.a", values_from="his.value.a")
 
     input.temp.b <- input.temp %>%
-      select(.data$ID,c("his.name.b","his.time.b","his.value.b")) %>%
-      unite(col="his.name.time.b",c(.data$his.name.b,.data$his.time.b),sep="_") %>%
-      #spread(.data$his.name.time.b,.data$his.value.b)
-      pivot_wider(names_from=.data$his.name.time.b, values_from=.data$his.value.b)
+      select("ID", "his.name.b", "his.time.b", "his.value.b") %>%
+      unite(col="his.name.time.b", c("his.name.b", "his.time.b"), sep="_") %>%
+      #spread("his.name.time.b", "his.value.b")
+      pivot_wider(names_from="his.name.time.b", values_from="his.value.b")
 
     output <- input %>%
       left_join(input.temp.a,by="ID") %>%
       left_join(input.temp.b,by="ID") %>%
-      rename(!! s_id := .data$ID) %>%
+      rename("{s_id}" := "ID") %>%
       data.frame()
 
   } else if (!is.null(group)) {
@@ -602,16 +602,16 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
 
     input.temp <- input %>%
       ungroup() %>%
-      select(.data$ID,all_of(list.exposure), !! s_group) %>%
+      select("ID", all_of(c(list.exposure, group))) %>%
       rename(GROUP= !! s_group) %>%
-      #gather(key="exp.name.time",value="exp.value",list.exposure.a,list.exposure.b,-.data$GROUP) %>%
-      pivot_longer(c(all_of(list.exposure.a),all_of(list.exposure.b)) & !.data$GROUP, names_to="exp.name.time", values_to="exp.value") %>%
+      #gather(key="exp.name.time",value="exp.value",all_of(c(list.exposure.a,list.exposure.b)),!"GROUP") %>%
+      pivot_longer(c(all_of(list.exposure.a),all_of(list.exposure.b)) & !"GROUP", names_to="exp.name.time", values_to="exp.value") %>%
       separate(col="exp.name.time",into=c("exp.name","exp.time"),sep="_") %>%
       #spread(key="exp.name",value="exp.value") %>%
       pivot_wider(names_from=exp.name, values_from=exp.value) %>%
       mutate(exp.time=as.numeric(.data$exp.time)) %>%
-      rename(exp.value.a=exposure.a,
-             exp.value.b=exposure.b) %>%
+      rename(exp.value.a=all_of(exposure.a),
+             exp.value.b=all_of(exposure.b)) %>%
       mutate(exp.value.a=if_else(is.na(.data$exp.value.a),
                                  "NA",
                                  as.character(.data$exp.value.a)),
@@ -625,7 +625,7 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
              his.name.b=name.history.b,
              his.time.a=.data$exp.time,
              his.time.b=.data$exp.time,
-             his.lag=if_else(.data$exp.time==first(.data$exp.time,default="NA"),
+             his.lag=if_else(.data$exp.time==first(.data$exp.time,default=NA),
                              "H",
                              lag(paste(.data$exp.value.a,.data$exp.value.b,sep=""))),
              his.temp.a=CumPaste(.data$his.lag), #use CumPaste
@@ -637,21 +637,21 @@ makehistory.two <- function (input,id,group=NULL,exposure.a,exposure.b,name.hist
       )
 
     input.temp.a <- input.temp %>%
-      select(.data$ID,c("his.name.a","his.time.a","his.value.a")) %>%
-      unite(col="his.name.time.a",c(.data$his.name.a,.data$his.time.a),sep="_") %>%
-      #spread(.data$his.name.time.a,.data$his.value.a)
-      pivot_wider(names_from=.data$his.name.time.a, values_from=.data$his.value.a) 
+      select("ID", "his.name.a", "his.time.a", "his.value.a") %>%
+      unite(col="his.name.time.a", c("his.name.a", "his.time.a"), sep="_") %>%
+      #spread("his.name.time.a", "his.value.a")
+      pivot_wider(names_from="his.name.time.a", values_from="his.value.a") 
 
     input.temp.b <- input.temp %>%
-      select(.data$ID,c("his.name.b","his.time.b","his.value.b")) %>%
-      unite(col="his.name.time.b",c(.data$his.name.b,.data$his.time.b),sep="_") %>%
-      #spread(.data$his.name.time.b,.data$his.value.b)
-      pivot_wider(names_from=.data$his.name.time.b, values_from=.data$his.value.b)
+      select("ID", "his.name.b", "his.time.b", "his.value.b") %>%
+      unite(col="his.name.time.b", c("his.name.b", "his.time.b"), sep="_") %>%
+      #spread("his.name.time.b", "his.value.b")
+      pivot_wider(names_from="his.name.time.b", values_from="his.value.b")
 
     output <- input %>%
       left_join(input.temp.a,by="ID") %>%
       left_join(input.temp.b,by="ID") %>%
-      rename(!! s_id := .data$ID) %>%
+      rename("{s_id}" := "ID") %>%
       data.frame()
 
   }
@@ -897,32 +897,46 @@ if (!is.null(weight.exposure) & any(!list.weight.exposure %in% names(input))) {
 step1 <- input[,c("ID",list.exposure,list.covariate,list.history,list.weight.exposure,list.weight.censor,list.strata,list.censor)]
 
 if (censoring=="no" | (censoring=="yes" & diagnostic!=2)) {
-  step2 <- step1 %>% 
-    gather(key="wide.name.exp",value="value.exp",c(list.exposure,list.history,list.weight.exposure,list.weight.censor,list.censor,list.strata))
-    #pivot_longer(c(list.exposure,list.history,list.weight.exposure,list.weight.censor,list.censor,list.strata), names_to="wide.name.exp", values_to="value.exp") 
+  step2_cols <- c(
+    list.exposure,
+    list.history,
+    list.weight.exposure,
+    list.weight.censor,
+    list.censor,
+    list.strata
+  )
 } else if (censoring=="yes" & diagnostic==2) {
-  step2 <- step1 %>% 
-    gather(key="wide.name.exp",value="value.exp",c(list.exposure,list.history,list.weight.exposure,list.strata))
-    #pivot_longer(c(list.exposure,list.history,list.weight.exposure,list.strata), names_to="wide.name.exp", values_to="value.exp") 
+  step2_cols <- c(
+    list.exposure,
+    list.history,
+    list.weight.exposure,
+    list.strata
+  )
+} else {
+  stop("Unexpected state in `lengthen()`.")
 }
 
-step3 <- step2 %>% separate(.data$wide.name.exp,c("name.exp","time.exposure"),sep="_") %>%
+step2 <- step1 %>%
+  gather(key="wide.name.exp",value="value.exp", all_of(step2_cols))
+#pivot_longer(all_of(cols), names_to="wide.name.exp", values_to="value.exp") 
+
+step3 <- step2 %>% separate("wide.name.exp", c("name.exp","time.exposure"),sep="_") %>%
   #spread(key="name.exp",value="value.exp")
   pivot_wider(names_from=name.exp, values_from=value.exp)
 
 if (censoring=="no" | (censoring=="yes" & diagnostic!=2)) {
   step4 <- step3 %>% 
-    gather(key="wide.name.cov",value="value.cov",list.covariate) %>%
+    gather(key="wide.name.cov",value="value.cov", all_of(list.covariate)) %>%
     #pivot_longer(list.covariate, names_to="wide.name.cov", values_to="value.cov") %>%
-    separate(.data$wide.name.cov,c("name.cov","time.covariate"),sep="_")
+    separate("wide.name.cov", c("name.cov", "time.covariate"), sep="_")
 } else if (censoring=="yes" & diagnostic==2) {
   step4 <- step3 %>% 
-    gather(key="wide.name.cov",value="value.cov",c(list.covariate,list.censor,list.weight.censor)) %>%
-    #pivot_longer(c(list.covariate,list.censor,list.weight.censor), names_to="wide.name.cov", values_to="value.cov") %>%
-    separate(.data$wide.name.cov,c("name.cov","time.covariate"),sep="_") %>%
+    gather(key="wide.name.cov",value="value.cov", all_of(c(list.covariate, list.censor, list.weight.censor))) %>%
+    #pivot_longer(all_of(c(list.covariate,list.censor,list.weight.censor)), names_to="wide.name.cov", values_to="value.cov") %>%
+    separate("wide.name.cov", c("name.cov", "time.covariate"), sep="_") %>%
     #spread(key="name.cov",value="value.cov") %>%
     pivot_wider(names_from=name.cov, values_from=value.cov) %>%
-    gather(key="name.cov",value="value.cov",covariate.unique)
+    gather(key="name.cov",value="value.cov", all_of(covariate.unique))
     #pivot_longer(covariate.unique, names_to="name.cov", values_to="value.cov") 
 }
 
@@ -946,7 +960,7 @@ censor.column <- "censor"
 
   if (censoring=="yes") {
 
-    step5 <- step4 %>% rename(censor=censor.unique) %>%
+    step5 <- step4 %>% rename(censor=all_of(censor.unique)) %>%
       filter(censor==0) #this step drops censored exposure times (for D1/D3), or censored covariate times (for D2)
 
   }
@@ -969,7 +983,7 @@ if (!is.null(history)) {
            !! s_history := as.character(!! s_history),
            name.cov=as.character(.data$name.cov)
            ) %>%
-    select(-.data$ID)
+    select(!"ID")
 
   } else if (is.null(history)) {
 
@@ -981,7 +995,7 @@ if (!is.null(history)) {
       mutate(!! s_id := as.character(.data$ID),
            name.cov=as.character(.data$name.cov)
       ) %>%
-      select(-.data$ID)
+      select(!"ID")
 }
 
 #restrict to appropriate times
@@ -1292,7 +1306,7 @@ apply.scope <- function (	input,
 
 		  period.table <- final.table %>%
 		    ungroup() %>%
-		    select(.data$distance) %>%
+		    select("distance") %>%
 		    make.period(periods)
 
 		  final.table <- data.frame(period.table,final.table) %>%
@@ -1648,7 +1662,7 @@ balance <- function (input,
 
       temp.table <-
         data.frame(input %>%
-                     select(.data$E,.data$H,.data$W,.data$time.exposure,.data$time.covariate,.data$name.cov,.data$value.cov) %>%
+                     select("E", "H", "W", "time.exposure", "time.covariate", "name.cov", "value.cov") %>%
                      group_by(.data$E,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate) %>%
                      summarise(mean.cov_b=weighted.mean(x=.data$value.cov,w=.data$W,na.rm=TRUE),
                                sd.cov_b=sd(x=.data$value.cov,na.rm=TRUE),
@@ -1697,7 +1711,7 @@ balance <- function (input,
       if ( all(full.table$D==0) & all(full.table$SMD==0) ) warning("There may be no covariate variation within any level of time-exposure, time-covariate, exposure history and/or strata, and exposure value; please ensure that the temporal covariates are specified correctly.")
 
       sub.table  <- full.table %>%
-        select(.data$E,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate,.data$D,.data$SMD,.data$N,.data$Nexp) %>%
+        select("E", "H", "name.cov", "time.exposure", "time.covariate", "D", "SMD", "N", "Nexp") %>%
         filter (!is.na(.data$D)) %>%
         filter(.data$time.exposure>=.data$time.covariate) %>%
         arrange(.data$name.cov,.data$time.exposure,.data$time.covariate,.data$H)
@@ -1706,7 +1720,7 @@ balance <- function (input,
 
         temp.table <-
         data.frame(input %>%
-                     select(.data$E,.data$H,.data$W,.data$time.exposure,.data$time.covariate,.data$name.cov,.data$value.cov) %>%
+                     select("E", "H", "W", "time.exposure", "time.covariate", "name.cov", "value.cov") %>%
                      group_by(.data$E,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate) %>%
                      summarise(mean.cov_b=weighted.mean(x=.data$value.cov,w=.data$W,na.rm=TRUE),
                                sd.cov_b=sd(x=.data$value.cov,na.rm=TRUE),
@@ -1755,7 +1769,7 @@ balance <- function (input,
       if ( any(is.na(unique(full.table$SMD))) ) warning("SMD values have been set to missing where there is no covariate variation within  some level of time-exposure, time-covariate, exposure history, and exposure value; in this case averages for SMD estimates will also appear as missing")
       if ( all(full.table$D==0) & all(full.table$SMD==0) ) warning("There may be no covariate variation within any level of time-exposure, time-covariate, exposure history and/or strata, and exposure value; please ensure that the temporal covariates are specified correctly.")
 
-      full.table <- full.table %>% select(.data$E,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate,.data$D,.data$SMD,.data$N,.data$Nexp)
+      full.table <- full.table %>% select("E", "H", "name.cov", "time.exposure", "time.covariate", "D", "SMD", "N", "Nexp")
 
       if (diagnostic==2) {
 
@@ -1784,7 +1798,7 @@ balance <- function (input,
       input <- mutate(input,W=1)
 
       temp.table <-
-        data.frame(input %>% select(.data$E,.data$H,.data$W,.data$time.exposure,.data$time.covariate,.data$name.cov,.data$value.cov) %>%
+        data.frame(input %>% select("E", "H", "W", "time.exposure", "time.covariate", "name.cov", "value.cov") %>%
                      group_by(.data$E,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate) %>%
                      summarise(mean.cov_b=weighted.mean(x=.data$value.cov,w=.data$W,na.rm=TRUE),
                                sd.cov_b=sd(x=.data$value.cov,na.rm=TRUE),
@@ -1833,7 +1847,7 @@ balance <- function (input,
       if ( all(full.table$D==0) & all(full.table$SMD==0) ) warning("There may be no covariate variation within any level of time-exposure, time-covariate, exposure history and/or strata, and exposure value; please ensure that the temporal covariates are specified correctly.")
 
       sub.table <- full.table %>%
-                    select(.data$E,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate,.data$D,.data$SMD,.data$N,.data$Nexp) %>%
+                    select("E", "H", "name.cov", "time.exposure", "time.covariate", "D", "SMD", "N", "Nexp") %>%
                       filter (!is.na(.data$D)) %>%
                         filter(.data$time.exposure>=.data$time.covariate) %>%
                           arrange(.data$name.cov,.data$time.exposure,.data$time.covariate,.data$H)
@@ -1843,7 +1857,7 @@ balance <- function (input,
       values.exposure <- sort(unique(input$E))
       temp.table <-
         data.frame(input %>%
-                     select(.data$E,.data$S,.data$W,.data$time.exposure,.data$time.covariate,.data$name.cov,.data$value.cov) %>%
+                     select("E", "S", "W", "time.exposure", "time.covariate", "name.cov", "value.cov") %>%
                      group_by(.data$E,.data$S,.data$name.cov,.data$time.exposure,.data$time.covariate) %>%
                      summarise(mean.cov_b=weighted.mean(x=.data$value.cov,w=.data$W,na.rm=TRUE),
                                sd.cov_b=sd(x=.data$value.cov,na.rm=TRUE),
@@ -1893,7 +1907,7 @@ balance <- function (input,
 
 
       sub.table <-  full.table %>%
-                     select(.data$E,.data$S,.data$name.cov,.data$time.exposure,.data$time.covariate,.data$D,.data$SMD,.data$N,.data$Nexp) %>%
+                     select("E", "S", "name.cov", "time.exposure", "time.covariate", "D", "SMD", "N", "Nexp") %>%
                        filter (!is.na(.data$D)) %>%
                          filter(.data$time.exposure<.data$time.covariate) %>%
                            arrange(.data$S,.data$name.cov,.data$time.exposure,.data$time.covariate)
@@ -1902,7 +1916,7 @@ balance <- function (input,
 
       temp.table <-
         data.frame(input %>%
-                     select(.data$E,.data$S,.data$H,.data$W,.data$time.exposure,.data$time.covariate,.data$name.cov,.data$value.cov) %>%
+                     select("E", "S", "H", "W", "time.exposure", "time.covariate", "name.cov", "value.cov") %>%
                      group_by(.data$E,.data$S,.data$H,.data$time.exposure,.data$time.covariate,.data$name.cov) %>%
                      summarise(mean.cov_b=weighted.mean(x=.data$value.cov,w=.data$W,na.rm=TRUE),
                                sd.cov_b=sd(x=.data$value.cov,na.rm=TRUE),
@@ -1951,7 +1965,7 @@ balance <- function (input,
         if ( all(full.table$D==0) & all(full.table$SMD==0) ) warning("There may be no covariate variation within any level of time-exposure, time-covariate, exposure history and/or strata, and exposure value; please ensure that the temporal covariates are specified correctly.")
 
         sub.table <- full.table %>%
-                       select(.data$E,.data$S,.data$H,.data$name.cov,.data$time.exposure,.data$time.covariate,.data$D,.data$SMD,.data$N,.data$Nexp) %>%
+                       select("E", "S", "H", "name.cov", "time.exposure", "time.covariate", "D", "SMD", "N", "Nexp") %>%
                          filter (!is.na(.data$D)) %>%
                            filter(.data$time.exposure>=.data$time.covariate) %>%
                              arrange(.data$S,.data$name.cov,.data$time.exposure,.data$time.covariate,.data$H)
@@ -2539,9 +2553,9 @@ makeplot <- function (input,
              comparison=paste(.data$exposure," vs ",.data$covariate,sep="")
              )
 
-    values.exposure  <- labelled.input %>% select(.data$time.exposure,.data$exposure) %>% unique()
-    values.covariate <- labelled.input %>% select(.data$time.covariate,.data$covariate) %>% unique()
-    values.comparison <- labelled.input %>% select(.data$comparison,.data$time.exposure,.data$time.covariate) %>% unique()
+    values.exposure  <- labelled.input %>% select("time.exposure", "exposure") %>% unique()
+    values.covariate <- labelled.input %>% select("time.covariate", "covariate") %>% unique()
+    values.comparison <- labelled.input %>% select("comparison", "time.exposure", "time.covariate") %>% unique()
 
     AscendOrderExposure   <- arrange(values.exposure,.data$time.exposure)
     AscendOrderCovariate  <- arrange(values.covariate,.data$time.covariate)
@@ -2562,7 +2576,7 @@ makeplot <- function (input,
         mutate(comparison=paste(label.covariate,"(t-",.data$distance,") vs ",label.exposure,"(t)",sep=""))
 
       values.distance        <- unique(labelled.input$distance)
-      values.comparison      <- labelled.input %>% select(.data$comparison,.data$distance) %>% unique()
+      values.comparison      <- labelled.input %>% select("comparison", "distance") %>% unique()
 
       DescendOrderComparison <- arrange(values.comparison,desc(.data$distance),desc(.data$comparison))
 
