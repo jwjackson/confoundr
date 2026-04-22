@@ -350,7 +350,7 @@ makehistory.one <- function (input,id,times,group=NULL,exposure,name.history="h"
       arrange(.data$ID,.data$exp.time) %>%
       mutate(his.name=name.history,
              his.time=.data$exp.time,
-             his.lag=if_else(.data$exp.time==first(.data$his.time,default="NA"),
+             his.lag=if_else(.data$exp.time==first(.data$his.time,default=NA), # use NA not "NA" because this variable is numeric not character
                               "H",
                               lag(.data$exp.value)),
              his.value=CumPaste(.data$his.lag)) %>% #use CumPaste
